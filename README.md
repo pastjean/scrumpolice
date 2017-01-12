@@ -23,7 +23,7 @@ git clone git@github.com:scrumpolice/scrumpolice.git $HOME/go/src/github.com/scr
 Get dependencies:
 
 ```sh
-go get ./...
+go get -u ./...
 ```
 
 Run it:
