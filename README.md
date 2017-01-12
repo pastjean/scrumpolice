@@ -12,6 +12,14 @@ your team's channel at a predefined time.
 
 # Development
 
+Have a working go environment (since 1.8 just install go)
+
+Clone the repo in your workspace:
+
+```sh
+git clone git@github.com:scrumpolice/scrumpolice.git $HOME/go/src/github.com/scrumpolice/scrumpolice
+```
+
 Get dependencies:
 
 ```sh
