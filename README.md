@@ -9,3 +9,17 @@ your team's channel at a predefined time.
 # Installation
 
 ...
+
+# Development
+
+Get dependencies:
+
+```sh
+go get ./...
+```
+
+Run it:
+
+```sh
+go run cmd/scrumpolice/scrumpolice.go
+```
