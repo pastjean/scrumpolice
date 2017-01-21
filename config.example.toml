@@ -1,10 +1,6 @@
 # Config for the scrumbot 
 # the configuration file follows the [toml standard](https://github.com/toml-lang/toml)
 
-# The shown username for the bot in the chat
-bot_name = "Scrum Police"
-bot_icon_url = "http://i.imgur.com/dzZvzXm.jpg"
-
 # The slack "bot-user" token
 slack_token = "xoxb-yourslacktokenhere"
 

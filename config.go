@@ -11,8 +11,6 @@ const Version = "0.0.2-beta"
 
 // Config is the configuration of the running bot
 type Config struct {
-	BotName    string       `toml:"bot_name"`
-	BotIconURL string       `toml:"bot_icon_url"`
 	SlackToken string       `toml:"slack_token"`
 	Teams      []TeamConfig `toml:"team"`
 }

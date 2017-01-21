@@ -19,7 +19,7 @@ const header = " ____                            ____        _\n" +
 
 func main() {
 	configFile := "config.toml"
-	flag.StringVar(&configFile, "config", configFile, "the configuration file to load")
+	flag.StringVar(&configFile, "config", configFile, "the configuration file to load/use")
 
 	flag.Parse()
 

@@ -1,32 +1,39 @@
-package scrumpolice
+package slack
 
 import (
 	"fmt"
 
 	"github.com/nlopes/slack"
+	"github.com/scrumpolice/scrumpolice/chat"
 )
 
-type SlackAdapter struct {
+type Adapter struct {
 	client *slack.Client
 	rtm    *slack.RTM
 
-	receivedMessagesChan chan<- Message
+	receivedMessagesChan chan<- chat.Message
 
-	configStore ConfigStore
+	username string
+	iconURL  string
+	token    string
 	// caches
 	userIDsUsernamesMap map[string]string
 }
 
-var _ ChatAdapter = &SlackAdapter{}
+var _ chat.Adapter = &Adapter{}
 
-func NewSlackAdapter(configStore ConfigStore, receivedMessagesChan chan<- Message) *SlackAdapter {
-	config, _ := configStore.Read()
-	slackClient := slack.New(config.SlackToken)
-
-	return &SlackAdapter{slackClient, nil, receivedMessagesChan, configStore, map[string]string{}}
+func NewChatAdapter(slackToken string, receivedMessagesChan chan<- chat.Message) *Adapter {
+	return &Adapter{
+		client:               slack.New(slackToken),
+		rtm:                  nil,
+		receivedMessagesChan: receivedMessagesChan,
+		username:             "Scrumpolice",
+		iconURL:              "http://i.imgur.com/dzZvzXm.jpg",
+		userIDsUsernamesMap:  map[string]string{},
+	}
 }
 
-func (s *SlackAdapter) Run() {
+func (s *Adapter) Run() {
 	// Prevent double Run()
 	if s.rtm != nil {
 		s.rtm.Disconnect()
@@ -54,29 +61,29 @@ func (s *SlackAdapter) Run() {
 	}
 }
 
-func (s *SlackAdapter) Disconnect() {
+func (s *Adapter) Disconnect() {
 	if s.rtm != nil {
 		s.rtm.Disconnect()
 	}
 	s.rtm = nil
 }
 
-func (s *SlackAdapter) onConnectedEvent(evt *slack.ConnectedEvent) {
+func (s *Adapter) onConnectedEvent(evt *slack.ConnectedEvent) {
 	// TODO: populate caches (channels, userids)
 }
 
-func (s *SlackAdapter) onMessageEvent(evt *slack.MessageEvent) {
+func (s *Adapter) onMessageEvent(evt *slack.MessageEvent) {
 	s.receivedMessagesChan <- *s.slackMessageEventToMessage(evt)
 }
 
-func (s *SlackAdapter) SendMessage(msg *Message) error {
+func (s *Adapter) SendMessage(msg *chat.Message) error {
 	channel, text, postMessageParameters := s.messageToPostMessageParameters(msg)
 	_, _, err := s.rtm.PostMessage(channel, text, postMessageParameters)
 	return err
 }
 
-func (s *SlackAdapter) slackMessageEventToMessage(evt *slack.MessageEvent) *Message {
-	m := &Message{
+func (s *Adapter) slackMessageEventToMessage(evt *slack.MessageEvent) *chat.Message {
+	m := &chat.Message{
 		Text:    evt.Text,
 		Channel: evt.Channel, // todo convert channel id
 		User:    s.getUsernameFromID(evt.User),
@@ -100,7 +107,7 @@ func (s *SlackAdapter) slackMessageEventToMessage(evt *slack.MessageEvent) *Mess
 	return m
 }
 
-func (s *SlackAdapter) messageToPostMessageParameters(msg *Message) (string, string, slack.PostMessageParameters) {
+func (s *Adapter) messageToPostMessageParameters(msg *chat.Message) (string, string, slack.PostMessageParameters) {
 	params := s.defaultPostMessageParameters()
 
 	if msg.Attachements != nil {
@@ -113,7 +120,7 @@ func (s *SlackAdapter) messageToPostMessageParameters(msg *Message) (string, str
 	return msg.Channel, msg.Text, slack.NewPostMessageParameters()
 }
 
-func (s *SlackAdapter) getUsernameFromID(userID string) string {
+func (s *Adapter) getUsernameFromID(userID string) string {
 	if username, ok := s.userIDsUsernamesMap[userID]; ok {
 		return username
 	}
@@ -127,7 +134,7 @@ func (s *SlackAdapter) getUsernameFromID(userID string) string {
 	return user.Name
 }
 
-func messageAttachmentToSlackAttachment(attachment *MessageAttachement) *slack.Attachment {
+func messageAttachmentToSlackAttachment(attachment *chat.MessageAttachement) *slack.Attachment {
 	return &slack.Attachment{
 		Color:      attachment.Color,
 		MarkdownIn: []string{"text", "pretext"},
@@ -136,23 +143,21 @@ func messageAttachmentToSlackAttachment(attachment *MessageAttachement) *slack.A
 	}
 }
 
-func slackAttachementToMessageAttachment(attachment *slack.Attachment) *MessageAttachement {
-	return &MessageAttachement{
+func slackAttachementToMessageAttachment(attachment *slack.Attachment) *chat.MessageAttachement {
+	return &chat.MessageAttachement{
 		Color:  attachment.Color,
 		Text:   attachment.Text,
 		Header: attachment.Pretext,
 	}
 }
 
-func (s *SlackAdapter) defaultPostMessageParameters() slack.PostMessageParameters {
-	config, _ := s.configStore.Read()
-
+func (s *Adapter) defaultPostMessageParameters() slack.PostMessageParameters {
 	params := slack.NewPostMessageParameters()
 	params.AsUser = true
 	params.Markdown = true
 	params.LinkNames = 1
 
-	params.IconURL = config.BotIconURL
-	params.Username = config.BotName
+	params.IconURL = s.iconURL
+	params.Username = s.username
 	return params
 }

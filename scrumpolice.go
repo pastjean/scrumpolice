@@ -1,11 +1,9 @@
 package scrumpolice
 
 import (
-	"log"
-	"os"
-
 	"github.com/k0kubun/pp"
-	"github.com/nlopes/slack"
+	"github.com/scrumpolice/scrumpolice/chat"
+	"github.com/scrumpolice/scrumpolice/chat/slack"
 )
 
 func Run(configStore ConfigStore) {
@@ -14,19 +12,14 @@ func Run(configStore ConfigStore) {
 
 type scrumPolice struct {
 	configStore          ConfigStore
-	chatAdapter          ChatAdapter
-	receivedMessagesChan chan Message
-}
-
-func init() {
-	logger := log.New(os.Stdout, "scrum-bot: ", log.Lshortfile|log.LstdFlags)
-	slack.SetLogger(logger)
+	chatAdapter          chat.Adapter
+	receivedMessagesChan chan chat.Message
 }
 
 func newScrumPolice(configStore ConfigStore) *scrumPolice {
-	receivedMessagesChan := make(chan Message)
-
-	chatAdapter := NewSlackAdapter(configStore, receivedMessagesChan)
+	receivedMessagesChan := make(chan chat.Message)
+	config, _ := configStore.Read()
+	chatAdapter := slack.NewChatAdapter(config.SlackToken, receivedMessagesChan)
 
 	return &scrumPolice{configStore, chatAdapter, receivedMessagesChan}
 }

@@ -9,3 +9,11 @@ your team's channel at a predefined time.
 # Installation
 
 ...
+
+Team
+ - List Teams
+ - Add Team
+ - Show Team
+ - Update Team
+ - Delete Team
+User

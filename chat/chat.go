@@ -1,6 +1,6 @@
-package scrumpolice
+package chat
 
-type ChatAdapter interface {
+type Adapter interface {
 	Run()
 	Disconnect()
 	SendMessage(msg *Message) error
