@@ -1,4 +1,10 @@
-# Scrum Police
+```                                           _ _
+ ___  ___ _ __ _   _ _ __ ___  _ __   ___ | (_) ___ ___
+/ __|/ __| '__| | | | '_ ` _ \| '_ \ / _ \| | |/ __/ _ \
+\__ \ (__| |  | |_| | | | | | | |_) | (_) | | | (_|  __/
+|___/\___|_|   \__,_|_| |_| |_| .__/ \___/|_|_|\___\___|
+                              |_|
+```
 
 [![Build Status](https://travis-ci.org/scrumpolice/scrumpolice.svg?branch=master)](https://travis-ci.org/scrumpolice/scrumpolice)
 [![Go Report Card](https://goreportcard.com/badge/github.com/scrumpolice/scrumpolice)](https://goreportcard.com/report/github.com/scrumpolice/scrumpolice)
