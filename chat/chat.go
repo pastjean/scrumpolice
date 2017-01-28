@@ -12,7 +12,7 @@ type Message struct {
 	Text         string
 	Attachements []MessageAttachement
 
-	// received message specifics
+	// # Received message specifics
 	// IsIM is for direct messages
 	IsIM bool
 	// IsGroup is for private channels

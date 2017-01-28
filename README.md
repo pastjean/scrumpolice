@@ -1,5 +1,8 @@
 # Scrum Police
 
+[![Build Status](https://travis-ci.org/scrumpolice/scrumpolice.svg?branch=master)](https://travis-ci.org/scrumpolice/scrumpolice)
+[![Go Report Card](https://goreportcard.com/badge/github.com/scrumpolice/scrumpolice)](https://goreportcard.com/report/github.com/scrumpolice/scrumpolice)
+
 Scrum bot ask every member of your team for a scrum report then reports it to
 your team's channel at a predefined time.
 

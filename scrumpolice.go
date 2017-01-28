@@ -30,7 +30,9 @@ func (bot *scrumPolice) Start() {
 	for {
 		select {
 		case msg := <-bot.receivedMessagesChan:
-			// TODO implement logic in here
+			// Run a state machine on the input message!!!
+			// TODO: implement logic in here
+			// We keep state per User receiving message
 			pp.Println(msg, "hello")
 		}
 	}
