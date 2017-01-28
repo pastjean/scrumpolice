@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/scrumpolice/scrumpolice"
+	"github.com/scrumpolice/scrumpolice/bot"
 )
 
 const header = "                                           _ _\n" +
@@ -35,5 +36,5 @@ func main() {
 		log.Fatalln("Cannot Load configuration", configFile, err)
 	}
 
-	scrumpolice.Run(configStore)
+	bot.Run(configStore)
 }
