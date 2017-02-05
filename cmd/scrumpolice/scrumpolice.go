@@ -1,14 +1,11 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
+	"os"
 
-	"math/rand"
-	"time"
-
-	"github.com/scrumpolice/scrumpolice"
+	"github.com/nlopes/slack"
 	"github.com/scrumpolice/scrumpolice/bot"
 )
 
@@ -19,22 +16,22 @@ const header = "                                           _ _\n" +
 	"|___/\\___|_|   \\__,_|_| |_| |_| .__/ \\___/|_|_|\\___\\___|\n" +
 	"                              |_|"
 
+const Version = "1.0.0"
+
 func main() {
-	configFile := "config.toml"
-	flag.StringVar(&configFile, "config", configFile, "the configuration file to load/use")
-
-	flag.Parse()
-
 	fmt.Println(header)
-	fmt.Println("Version", scrumpolice.Version)
+	fmt.Println("Version", Version)
 	fmt.Println("")
 
-	rand.Seed(time.Now().UTC().UnixNano())
+	slackBotToken := os.Getenv("SCRUMPOLICE_SLACK_BOT_TOKEN")
 
-	configStore, err := scrumpolice.NewTOMLConfigStore(configFile)
-	if err != nil {
-		log.Fatalln("Cannot Load configuration", configFile, err)
+	if slackBotToken == "" {
+		log.Fatalln("slack bot token must be set in SCRUMPOLICE_SLACK_BOT_TOKEN")
 	}
 
-	bot.Run(configStore)
+	logger := log.New(os.Stderr, "", log.Lshortfile)
+	slackAPIClient := slack.New(slackBotToken)
+
+	b := bot.New(slackAPIClient, logger)
+	b.Run()
 }

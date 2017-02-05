@@ -3,6 +3,3 @@
 
 # Intellij family
 .idea/*
-
-# So we do not mistakenly commit our tokens
-config.toml
