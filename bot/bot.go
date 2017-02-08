@@ -4,6 +4,7 @@ import (
 	"log"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/nlopes/slack"
 )
@@ -12,6 +13,9 @@ type (
 	Bot struct {
 		slackBotRTM *slack.RTM
 		slackBotAPI *slack.Client
+
+		userContextsMutex sync.Mutex
+		userContexts      map[string]BotContextHandler
 
 		name    string
 		iconURL string
@@ -27,15 +31,16 @@ func New(slackApiClient *slack.Client, logger *log.Logger) *Bot {
 	runtime.Gosched()
 
 	return &Bot{
-		slackBotAPI: slackApiClient,
-		slackBotRTM: slackBotRTM,
-		logger:      logger,
-
-		iconURL: "http://i.imgur.com/dzZvzXm.jpg",
+		slackBotAPI:  slackApiClient,
+		slackBotRTM:  slackBotRTM,
+		logger:       logger,
+		userContexts: map[string]BotContextHandler{},
+		iconURL:      "http://i.imgur.com/dzZvzXm.jpg",
 	}
 }
 
 func (b *Bot) Run() {
+	go b.RunScrumModule()
 
 	go func() {
 		for msg := range b.slackBotRTM.IncomingEvents {
@@ -72,7 +77,11 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 
 	eventText := strings.ToLower(event.Text)
 
-	// Handle commands that can be handled in public and can be adressed to anyone
+	if !b.HandleScrumMessage(event) {
+		return
+	}
+
+	// HANDLE GLOBAL PUBLIC COMMANDS HERE
 	if strings.Contains(eventText, "wave") {
 		b.reactToEvent(event, "wave")
 		b.reactToEvent(event, "oncoming_police_car")
@@ -83,13 +92,18 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		return
 	}
 
-	if b.adressedToMe(eventText) {
-		eventText = b.trimBot(eventText)
+	// FROM HERE All Commands need to be adressed to me or handled in private conversations
+	if !isIM && b.adressedToMe(eventText) {
+		eventText = b.trimBotNameInMessage(eventText)
+		return
 	}
 
-	// Handle private only commands commands that can be handled in private :)
 	if isIM {
-		// FIXME: SCRUMMODULE HERE
+		// HANDLE PRIVATE TALK IN HERE
+	}
+
+	if b.adressedToMe(eventText) {
+		eventText = b.trimBotNameInMessage(eventText)
 	}
 
 	// Handle commands adressed to me (can be public or private)
@@ -115,7 +129,7 @@ func (b *Bot) adressedToMe(msg string) bool {
 		strings.HasPrefix(msg, strings.ToLower(b.name))
 }
 
-func (b *Bot) trimBot(msg string) string {
+func (b *Bot) trimBotNameInMessage(msg string) string {
 	b.logger.Println(msg, b.id, b.name)
 
 	msg = strings.Replace(msg, strings.ToLower("<@"+b.id+">"), "", 1)
@@ -179,4 +193,28 @@ func (b *Bot) help(event *slack.MessageEvent) {
 		b.logger.Printf("%s\n", err)
 		return
 	}
+}
+
+func (b *Bot) canQuitBotContext(handler BotContextHandler) BotContextHandler {
+	return BotContextHandlerFunc(func(event *slack.MessageEvent) bool {
+		if event.Text == "quit" {
+			b.slackBotAPI.PostMessage(event.Channel, "Action is canceled, if you wanna do anything else, just poke me, `help` is always available! :wave:", slack.PostMessageParameters{AsUser: true})
+			delete(b.userContexts, event.User)
+			return false
+		}
+
+		return handler.HandleMessage(event)
+	})
+}
+
+func (b *Bot) setUserContext(user string, context BotContextHandler) {
+	b.userContextsMutex.Lock()
+	b.userContexts[user] = context
+	b.userContextsMutex.Unlock()
+}
+
+func (b *Bot) unsetUserContext(user string) {
+	b.userContextsMutex.Lock()
+	delete(b.userContexts, user)
+	b.userContextsMutex.Unlock()
 }

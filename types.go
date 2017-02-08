@@ -3,7 +3,9 @@ package scrumpolice
 type (
 	TeamID string
 	Team   struct {
-		ID TeamID
+		ID      TeamID
+		Name    string
+		Channel string
 	}
 
 	TeamService interface {
