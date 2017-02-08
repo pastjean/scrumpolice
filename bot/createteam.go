@@ -49,7 +49,7 @@ func (b *Bot) createTeamChooseChannel(team *scrumpolice.Team) BotContextHandler 
 			go func() { b.slackBotAPI.JoinChannel(channel.ID) }()
 		}
 
-		b.slackBotAPI.PostMessage(event.Channel, "OK! All good, i'm part of that channel, who is part of your team? (comma separated eg: pastjean,lbourdages)", slack.PostMessageParameters{AsUser: true})
+		b.slackBotAPI.PostMessage(event.Channel, "OK! All good, i'm part of that channel, who is part of your team? (comma separated eg: \"pastjean, lbourdages\")", slack.PostMessageParameters{AsUser: true})
 		b.setUserContext(event.User, b.createTeamChooseTeamMembers(team))
 
 		team.Channel = event.Text

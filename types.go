@@ -6,6 +6,7 @@ type (
 		ID      TeamID
 		Name    string
 		Channel string
+		Members []string
 	}
 
 	TeamService interface {
