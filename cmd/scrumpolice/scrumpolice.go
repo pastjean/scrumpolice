@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -23,11 +24,15 @@ func main() {
 	fmt.Println("Version", Version)
 	fmt.Println("")
 
-	slackBotToken := os.Getenv("SCRUMPOLICE_SLACK_BOT_TOKEN")
+	slackBotToken := os.Getenv("SCRUMPOLICE_SLACK_TOKEN")
 
 	if slackBotToken == "" {
-		log.Fatalln("slack bot token must be set in SCRUMPOLICE_SLACK_BOT_TOKEN")
+		log.Fatalln("slack bot token must be set in SCRUMPOLICE_SLACK_TOKEN")
 	}
+
+	configFile := "config.json"
+	flag.StringVar(&configFile, "config", configFile, "The configuration file")
+	flag.Parse()
 
 	logger := log.New(os.Stderr, "", log.Lshortfile)
 	slackAPIClient := slack.New(slackBotToken)

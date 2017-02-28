@@ -195,6 +195,10 @@ func (b *Bot) help(event *slack.MessageEvent) {
 	}
 }
 
+func (b *Bot) canQuitBotContextHandlerFunc(handler func(event *slack.MessageEvent) bool) BotContextHandler {
+	return b.canQuitBotContext(BotContextHandlerFunc(handler))
+}
+
 func (b *Bot) canQuitBotContext(handler BotContextHandler) BotContextHandler {
 	return BotContextHandlerFunc(func(event *slack.MessageEvent) bool {
 		if event.Text == "quit" {
