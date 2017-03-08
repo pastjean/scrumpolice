@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/nlopes/slack"
-	"github.com/scrumpolice/scrumpolice"
 )
 
 func (b *Bot) createTeam(event *slack.MessageEvent) {
@@ -17,12 +16,12 @@ func (b *Bot) createTeamChooseTeamName() BotContextHandler {
 		teamName := event.Text
 		b.slackBotAPI.PostMessage(event.Channel, fmt.Sprintf("the team `%s` will be created, in what channel do they operate?", teamName), slack.PostMessageParameters{AsUser: true})
 
-		b.userContexts[event.User] = b.createTeamChooseChannel(&scrumpolice.Team{Name: teamName})
+		b.userContexts[event.User] = b.createTeamChooseChannel(&Team{Name: teamName})
 		return false
 	}))
 }
 
-func (b *Bot) createTeamChooseChannel(team *scrumpolice.Team) BotContextHandler {
+func (b *Bot) createTeamChooseChannel(team *Team) BotContextHandler {
 	return b.canQuitBotContext(BotContextHandlerFunc(func(event *slack.MessageEvent) bool {
 		b.logger.Println("that thing happened", event)
 
@@ -58,7 +57,7 @@ func (b *Bot) createTeamChooseChannel(team *scrumpolice.Team) BotContextHandler 
 	}))
 }
 
-func (b *Bot) createTeamChooseTeamMembers(team *scrumpolice.Team) BotContextHandler {
+func (b *Bot) createTeamChooseTeamMembers(team *Team) BotContextHandler {
 	return b.canQuitBotContext(BotContextHandlerFunc(func(event *slack.MessageEvent) bool {
 		return false
 	}))

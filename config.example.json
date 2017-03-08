@@ -1,0 +1,26 @@
+{
+  "teams": [
+    {
+      "channel": "themostaswesometeamchannel",
+      "name": "L337 team",
+      "members": [
+        "@fboutin2",
+        "@lbourdages",
+        "@pastjean"
+      ],
+      "question_sets": [
+        {
+          "questions": [
+            "What did you do yesterday?",
+            "What will you do today?",
+            "Are you being blocked by someone for a review? who ? why ?",
+            "How will you dominate the world"
+          ],
+          "report_schedule_cron": "0 0 8 * * 1-5",
+          "first_reminder_limit": "+55m",
+          "last_reminder_limit": "+65m"
+        }
+      ]
+    }
+  ]
+}

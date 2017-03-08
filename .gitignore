@@ -3,3 +3,6 @@
 
 # Intellij family
 .idea/*
+
+config.*.json
+!config.example.json

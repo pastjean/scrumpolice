@@ -1,35 +1,55 @@
 package bot
 
-import "time"
-import "github.com/robfig/cron"
+import (
+	"encoding/json"
+	"log"
+	"os"
+	"time"
+
+	"github.com/robfig/cron"
+	fsnotify "gopkg.in/fsnotify.v1"
+)
 
 type (
-	Team struct {
-		Name                      string
-		Channel                   string
-		Members                   []string
-		Questions                 []string
-		ReportCronLimit           cron.Schedule
-		ReminderLimitBeforeReport time.Duration
-		AlertToFillReport         time.Duration
-		Timezone                  *time.Location
+	ConfigurationProvider interface {
+		Config() *Config
+		OnChange(handler func())
 	}
 
-	TeamConfig struct {
-		Name                      string   `json:"name"`
-		Channel                   string   `json:"channel"`
-		Members                   []string `json:"members"`
-		Questions                 []string `json:"questions"`
-		ReportCronLimit           string   `json:"report_schedule_cron"`
-		ReminderLimitBeforeReport string   `json:"limit_period"`
-		AlertToFillReport         string   `json:"grace_reminder_period"`
-		Timezone                  string   `json:"timezone"`
-	}
-
+	// Config is the configuration format
 	Config struct {
-		SlackToken      string       `json:"slack_token"`
 		DefaultTimezone string       `json:"default_timezone"`
 		Teams           []TeamConfig `json:"teams"`
+	}
+
+	// TeamConfig is the file format for the configuration of a team in json
+	//	{
+	//	"channel": "analyticsinternal",
+	//	"name": "Usage Analytics",
+	//	"members": ["@jrochette", "@pastjean", "@lbourdages", "@gbergeron", "@mlachapelle", "@aemond", "@gprovost"],
+	//	"question_sets": [{
+	//	  "questions":  [
+	//	    "What did you do yesterday? _(jira if needed)_",
+	//	    "What will you do today?",
+	//	    "Are you being blocked by someone for a review? who ? why ?"
+	//	  ],
+	//	"report_schedule_cron": "0 0 8 * * MON",
+	//	"first_reminder_limit": "+55m",
+	//	"last_reminder_limit": "+65m"
+	//	}
+	TeamConfig struct {
+		Name         string              `json:"name"`
+		Channel      string              `json:"channel"`
+		Members      []string            `json:"members"`
+		QuestionSets []QuestionSetConfig `json:"question_sets"`
+		Timezone     string              `json:"timezone"`
+	}
+
+	QuestionSetConfig struct {
+		Questions                 []string `json:"questions"`
+		ReportScheduleCron        string   `json:"report_schedule_cron"`
+		FirstReminderBeforeReport string   `json:"first_reminder_limit"`
+		LastReminderBeforeReport  string   `json:"last_reminder_limit"`
 	}
 )
 
@@ -39,3 +59,122 @@ var (
 		Teams:           []TeamConfig{},
 	}
 )
+
+type configFileWatcher struct {
+	config         *Config
+	changeHandlers []func()
+}
+
+func NewConfigWatcher(file string) ConfigurationProvider {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fw := &configFileWatcher{changeHandlers: []func(){}}
+	go func() {
+		defer watcher.Close()
+		for {
+			select {
+			case event := <-watcher.Events:
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					log.Println("Configuration file modified '", event.Name, "', reloading...")
+					fw.reloadAndDistributeChange(file)
+				}
+			case err := <-watcher.Errors:
+				log.Println("Error while watching for configuration file:", err)
+			}
+		}
+	}()
+
+	err = watcher.Add(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Loading initial configuration")
+	fw.reloadAndDistributeChange(file)
+	return fw
+}
+
+func (fw *configFileWatcher) Config() *Config {
+	return fw.config
+}
+
+func (fw *configFileWatcher) OnChange(handler func()) {
+	fw.changeHandlers = append(fw.changeHandlers, handler)
+}
+
+func (fw *configFileWatcher) reloadAndDistributeChange(filename string) {
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Println("Cannot open file '", filename, "', error:", err)
+	}
+	err = json.NewDecoder(file).Decode(&fw.config)
+	if err != nil {
+		log.Println("Cannot parse configuration file ('", filename, "') content:", err)
+	}
+
+	for _, handler := range fw.changeHandlers {
+		go handler()
+	}
+}
+
+func (c *Config) ToTeams() []*Team {
+	teams := []*Team{}
+	for _, teamConfig := range c.Teams {
+		teams = append(teams, teamConfig.ToTeam())
+	}
+	return teams
+}
+
+func (tc *TeamConfig) ToTeam() *Team {
+	qsets := []*QuestionSet{}
+	for _, questionsetconfig := range tc.QuestionSets {
+		qs, err := questionsetconfig.toQuestionSet()
+		if err != nil {
+			log.Println("error parsing question set for team", tc.Name, err)
+		} else {
+			qsets = append(qsets, qs)
+		}
+	}
+
+	loc, err := time.LoadLocation(tc.Timezone)
+	if err != nil {
+		log.Println("Timezone error for team:", tc.Name, "Will use default timezone")
+		loc = nil
+	}
+
+	return &Team{
+		Name:          tc.Name,
+		Channel:       tc.Channel,
+		Members:       tc.Members,
+		Timezone:      loc,
+		QuestionsSets: qsets,
+	}
+
+}
+
+func (qs *QuestionSetConfig) toQuestionSet() (*QuestionSet, error) {
+	schedule, err := cron.Parse(qs.ReportScheduleCron)
+	if err != nil {
+		return nil, err
+	}
+
+	fir, err := time.ParseDuration(qs.FirstReminderBeforeReport)
+	if err != nil {
+		return nil, err
+	}
+
+	sec, err := time.ParseDuration(qs.LastReminderBeforeReport)
+	if err != nil {
+		return nil, err
+	}
+
+	return &QuestionSet{
+		Questions:                 qs.Questions,
+		ReportSchedule:            schedule,
+		FirstReminderBeforeReport: fir,
+		LastReminderBeforeReport:  sec,
+	}, nil
+}

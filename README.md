@@ -15,11 +15,36 @@ your team's channel at a predefined time.
 
 - [Jason Fried's - Status meetings are the scourge](https://m.signalvnoise.com/status-meetings-are-the-scourge-39f49267ca90) started all the fuzz.
 
-# Installation 
+# Usage 
 
-```sh 
-# TODO
-```
+
+```json
+{
+  "teams": [
+    {
+      "channel": "themostaswesometeamchannel",
+      "name": "L337 team",
+      "members": [
+        "@fboutin2",
+        "@lbourdages",
+        "@pastjean"
+      ],
+      "question_sets": [
+        {
+          "questions": [
+            "What did you do yesterday?",
+            "What will you do today?",
+            "Are you being blocked by someone for a review? who ? why ?",
+            "How will you dominate the world"
+          ],
+          "report_schedule_cron": "0 0 8 * * 1-5",
+          "first_reminder_limit": "+55m",
+          "last_reminder_limit": "+65m"
+        }
+      ]
+    }
+  ]
+}```
 
 # Development
 

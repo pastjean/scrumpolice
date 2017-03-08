@@ -26,10 +26,10 @@ func (b *Bot) HandleScrumMessage(event *slack.MessageEvent) bool {
 		return context.HandleMessage(event)
 	}
 
-	if event.Text == "create team" {
-		b.createTeam(event)
-		return false
-	}
+	//if event.Text == "create team" {
+	//	b.createTeam(event)
+	//	return false
+	//}
 
 	if strings.HasPrefix(strings.ToLower(event.Text), "start scrum") {
 		b.startScrum(event)

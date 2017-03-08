@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/k0kubun/pp"
 	"github.com/nlopes/slack"
 	"github.com/scrumpolice/scrumpolice/bot"
 )
@@ -34,9 +35,19 @@ func main() {
 	flag.StringVar(&configFile, "config", configFile, "The configuration file")
 	flag.Parse()
 
+	// Injection
 	logger := log.New(os.Stderr, "", log.Lshortfile)
+
+	configurationProvider := bot.NewConfigWatcher(configFile)
+
+	configurationProvider.OnChange(func() {
+		pp.Println("Configuration File Changed heres the new teams")
+		pp.Println(configurationProvider.Config().ToTeams())
+	})
+
 	slackAPIClient := slack.New(slackBotToken)
 
+	// Create and run bot
 	b := bot.New(slackAPIClient, logger)
 	b.Run()
 }
