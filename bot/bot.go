@@ -42,9 +42,6 @@ func New(slackApiClient *slack.Client, logger *log.Logger, scrum *scrum.Module) 
 		iconURL:      "http://i.imgur.com/dzZvzXm.jpg",
 		scrum:        scrum,
 	}
-
-	// FIXME: init bot
-	// ie: create emojis ie :shame: and all
 }
 
 func (b *Bot) Run() {
