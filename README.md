@@ -18,6 +18,8 @@ your team's channel at a predefined time.
 # Usage 
 
 
+Create your configuration file: 
+
 ```json
 {
   "teams": [
@@ -44,7 +46,14 @@ your team's channel at a predefined time.
       ]
     }
   ]
-}```
+}
+```
+
+Run the bot with a slack bot user token
+
+```sh
+SCRUMPOLICE_SLACK_TOKEN=xoxb-mytoken scrumpolice -config config.example.json
+```
 
 # Development
 

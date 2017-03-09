@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/k0kubun/pp"
 	"github.com/nlopes/slack"
 	"github.com/scrumpolice/scrumpolice/bot"
+	"github.com/scrumpolice/scrumpolice/scrum"
 )
 
 const header = "                                           _ _\n" +
@@ -18,7 +18,7 @@ const header = "                                           _ _\n" +
 	"|___/\\___|_|   \\__,_|_| |_| |_| .__/ \\___/|_|_|\\___\\___|\n" +
 	"                              |_|"
 
-const Version = "0.0.0"
+const Version = "0.5.0-beta0"
 
 func main() {
 	fmt.Println(header)
@@ -37,17 +37,11 @@ func main() {
 
 	// Injection
 	logger := log.New(os.Stderr, "", log.Lshortfile)
-
-	configurationProvider := bot.NewConfigWatcher(configFile)
-
-	configurationProvider.OnChange(func() {
-		pp.Println("Configuration File Changed heres the new teams")
-		pp.Println(configurationProvider.Config().ToTeams())
-	})
-
+	configurationProvider := scrum.NewConfigWatcher(configFile)
 	slackAPIClient := slack.New(slackBotToken)
+	scrum := scrum.NewModule(configurationProvider, slackAPIClient)
 
 	// Create and run bot
-	b := bot.New(slackAPIClient, logger)
+	b := bot.New(slackAPIClient, logger, scrum)
 	b.Run()
 }

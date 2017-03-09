@@ -1,4 +1,4 @@
-package bot
+package scrum
 
 import (
 	"encoding/json"
@@ -18,8 +18,8 @@ type (
 
 	// Config is the configuration format
 	Config struct {
-		DefaultTimezone string       `json:"default_timezone"`
-		Teams           []TeamConfig `json:"teams"`
+		Timezone string       `json:"timezone"`
+		Teams    []TeamConfig `json:"teams"`
 	}
 
 	// TeamConfig is the file format for the configuration of a team in json
@@ -50,13 +50,6 @@ type (
 		ReportScheduleCron        string   `json:"report_schedule_cron"`
 		FirstReminderBeforeReport string   `json:"first_reminder_limit"`
 		LastReminderBeforeReport  string   `json:"last_reminder_limit"`
-	}
-)
-
-var (
-	DefaultConfig = Config{
-		DefaultTimezone: "Local",
-		Teams:           []TeamConfig{},
 	}
 )
 
@@ -152,7 +145,6 @@ func (tc *TeamConfig) ToTeam() *Team {
 		Timezone:      loc,
 		QuestionsSets: qsets,
 	}
-
 }
 
 func (qs *QuestionSetConfig) toQuestionSet() (*QuestionSet, error) {

@@ -1,12 +1,13 @@
 {
+  "timezone": "America/Montreal",
   "teams": [
     {
-      "channel": "themostaswesometeamchannel",
-      "name": "L337 team",
+      "channel": "general",
+      "name": "L337",
       "members": [
-        "@fboutin2",
-        "@lbourdages",
-        "@pastjean"
+        "fboutin2",
+        "lbourdages",
+        "pa"
       ],
       "question_sets": [
         {
@@ -16,9 +17,9 @@
             "Are you being blocked by someone for a review? who ? why ?",
             "How will you dominate the world"
           ],
-          "report_schedule_cron": "0 0 8 * * 1-5",
-          "first_reminder_limit": "+55m",
-          "last_reminder_limit": "+65m"
+          "report_schedule_cron": "@every 10s",
+          "first_reminder_limit": "-8s",
+          "last_reminder_limit": "-3s"
         }
       ]
     }

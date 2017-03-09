@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/nlopes/slack"
+	"github.com/scrumpolice/scrumpolice/scrum"
 )
 
 type (
@@ -16,6 +17,9 @@ type (
 
 		userContextsMutex sync.Mutex
 		userContexts      map[string]BotContextHandler
+		userRestartScrum  map[string]func() bool
+
+		scrum *scrum.Module
 
 		name    string
 		iconURL string
@@ -25,7 +29,7 @@ type (
 	}
 )
 
-func New(slackApiClient *slack.Client, logger *log.Logger) *Bot {
+func New(slackApiClient *slack.Client, logger *log.Logger, scrum *scrum.Module) *Bot {
 	slackBotRTM := slackApiClient.NewRTM()
 	go slackBotRTM.ManageConnection()
 	runtime.Gosched()
@@ -36,12 +40,14 @@ func New(slackApiClient *slack.Client, logger *log.Logger) *Bot {
 		logger:       logger,
 		userContexts: map[string]BotContextHandler{},
 		iconURL:      "http://i.imgur.com/dzZvzXm.jpg",
+		scrum:        scrum,
 	}
+
+	// FIXME: init bot
+	// ie: create emojis ie :shame: and all
 }
 
 func (b *Bot) Run() {
-	go b.RunScrumModule()
-
 	go func() {
 		for msg := range b.slackBotRTM.IncomingEvents {
 			switch evt := msg.Data.(type) {
@@ -93,26 +99,21 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 	}
 
 	// FROM HERE All Commands need to be adressed to me or handled in private conversations
-	if !isIM && b.adressedToMe(eventText) {
+	adressedToMe := b.adressedToMe(eventText)
+	if !isIM && adressedToMe {
 		eventText = b.trimBotNameInMessage(eventText)
-		return
 	}
 
 	if isIM {
 		// HANDLE PRIVATE TALK IN HERE
 	}
 
-	if b.adressedToMe(eventText) {
-		eventText = b.trimBotNameInMessage(eventText)
-	}
-
-	// Handle commands adressed to me (can be public or private)
-	if eventText == "where do you live?" ||
-		eventText == "stack" {
-		b.replyBotLocation(event)
+	// From here on i only care of messages that were clearly adressed to me so i'll just get out
+	if !adressedToMe && !isIM {
 		return
 	}
 
+	// Handle commands adressed to me (can be public or private)
 	if eventText == "source code" {
 		b.sourceCode(event)
 		return
@@ -122,6 +123,10 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		b.help(event)
 		return
 	}
+
+	// Unrecogned message so let's help the user
+	b.unrecognizedMessage(event)
+	return
 }
 
 func (b *Bot) adressedToMe(msg string) bool {
@@ -130,8 +135,6 @@ func (b *Bot) adressedToMe(msg string) bool {
 }
 
 func (b *Bot) trimBotNameInMessage(msg string) string {
-	b.logger.Println(msg, b.id, b.name)
-
 	msg = strings.Replace(msg, strings.ToLower("<@"+b.id+">"), "", 1)
 	msg = strings.Replace(msg, strings.ToLower(b.name), "", 1)
 	msg = strings.Trim(msg, " :\n")
@@ -169,26 +172,29 @@ func (b *Bot) sourceCode(event *slack.MessageEvent) {
 	}
 }
 
-func (b *Bot) replyBotLocation(event *slack.MessageEvent) {
+func (b *Bot) help(event *slack.MessageEvent) {
+	message := slack.Attachment{
+		MarkdownIn: []string{"text"},
+		Text: "- `source code`: location of my source code\n" +
+			"- `help`: well, this command\n" +
+			"- `start scrum`: starts a scrum for a team and a specific set of questions, defaults to your only team if you got only one, and only questions set if there's only one on the team you chose\n" +
+			"- `restart scrum`: restart your last done scrum, if it wasn't posted",
+	}
+
 	params := slack.PostMessageParameters{AsUser: true}
-	_, _, err := b.slackBotAPI.PostMessage(event.Channel, "*My irresponsible owners forgot to fill this placeholder.*", params)
-	//	_, _, err := b.slackBotAPI.PostMessage(event.Channel, "I'm currently living in the Clouds, powered by (JUST A REGULAR SOMETHING). You can find my heart at: <https://github.com/scrumpolice/scrumpolice>, *My non responsible owners forgot to fill this text.*", params)
+	params.Attachments = []slack.Attachment{message}
+
+	_, _, err := b.slackBotAPI.PostMessage(event.Channel, "Here's a list of supported commands", params)
 	if err != nil {
 		b.logger.Printf("%s\n", err)
 		return
 	}
 }
 
-func (b *Bot) help(event *slack.MessageEvent) {
-	message := slack.Attachment{
-		Text: `- "source code" -> location of my source code
-- "where do you live?" OR "stack" -> get information about where the tech stack behind @scrumpolice
-- "help" -> well, this command`,
-	}
+func (b *Bot) unrecognizedMessage(event *slack.MessageEvent) {
 	params := slack.PostMessageParameters{AsUser: true}
-	params.Attachments = []slack.Attachment{message}
 
-	_, _, err := b.slackBotAPI.PostMessage(event.Channel, "Here's a list of supported commands", params)
+	_, _, err := b.slackBotAPI.PostMessage(event.Channel, "I don't understand what you're trying to tell me, try `help`", params)
 	if err != nil {
 		b.logger.Printf("%s\n", err)
 		return
