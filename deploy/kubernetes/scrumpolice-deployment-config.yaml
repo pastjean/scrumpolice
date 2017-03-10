@@ -1,0 +1,68 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: scrumpolice
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: scrumpolice
+    spec:
+    volumes:
+      - name: config-volume
+        configMap:
+          name: scrumpoliceconfig
+      containers:
+      - name: scrumpolice
+        image: pastjean/scrumpolice:v0.5.0
+        args: config /etc/config/config.json
+        resources:
+          requests:
+            memory: "100mi"
+            cpu: "100m"
+          limits:
+            memory: "150mi"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/config
+          readOnly: true
+        env:
+        - name: SCRUMPOLICE_SLACK_TOKEN
+          value: xoxb-putyourtokehere
+
+---
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: scrumpoliceconfig
+data:
+  config.json: |-
+  {
+    "timezone": "America/Montreal",
+    "teams": [
+      {
+        "channel": "general",
+        "name": "L337",
+        "members": [
+          "fboutin2",
+          "lbourdages",
+          "pa"
+        ],
+        "question_sets": [
+          {
+            "questions": [
+              "What did you do yesterday?",
+              "What will you do today?",
+              "Are you being blocked by someone for a review? who ? why ?",
+              "How will you dominate the world"
+            ],
+            "report_schedule_cron": "@every 10s",
+            "first_reminder_limit": "-8s",
+            "last_reminder_limit": "-3s"
+          }
+        ]
+      }
+    ]
+  }

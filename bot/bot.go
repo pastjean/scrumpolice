@@ -2,7 +2,6 @@ package bot
 
 import (
 	"log"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -19,7 +18,7 @@ type (
 		userContexts      map[string]BotContextHandler
 		userRestartScrum  map[string]func() bool
 
-		scrum *scrum.Module
+		scrum scrum.Service
 
 		name    string
 		iconURL string
@@ -29,10 +28,9 @@ type (
 	}
 )
 
-func New(slackApiClient *slack.Client, logger *log.Logger, scrum *scrum.Module) *Bot {
+func New(slackApiClient *slack.Client, logger *log.Logger, scrum scrum.Service) *Bot {
 	slackBotRTM := slackApiClient.NewRTM()
 	go slackBotRTM.ManageConnection()
-	runtime.Gosched()
 
 	return &Bot{
 		slackBotAPI:  slackApiClient,

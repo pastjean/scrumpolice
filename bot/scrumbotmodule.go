@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/k0kubun/pp"
 	"github.com/nlopes/slack"
 	"github.com/scrumpolice/scrumpolice/scrum"
 )
@@ -65,7 +64,6 @@ func (b *Bot) startScrum(event *slack.MessageEvent) bool {
 	username := user.Name
 
 	teams := b.scrum.GetTeamsForUser(username)
-	pp.Println(teams)
 	if len(teams) == 0 {
 		b.slackBotAPI.PostMessage(event.Channel, "You're not part of a team, no point in doing a scrum report", slack.PostMessageParameters{AsUser: true})
 	}

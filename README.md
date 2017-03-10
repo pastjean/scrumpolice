@@ -52,7 +52,7 @@ Create your configuration file:
 Run the bot with a slack bot user token
 
 ```sh
-SCRUMPOLICE_SLACK_TOKEN=xoxb-mytoken scrumpolice -config config.example.json
+SCRUMPOLICE_SLACK_TOKEN=xoxb-mytoken scrumpolice -config config.json
 ```
 
 # Development
@@ -61,8 +61,9 @@ Have a working go environment (since 1.8 just install go) otherwise you need the
 `$GOPATH` set and use that instead of `$HOME/go`.
 
 ```sh
-go get -u -d github.com/scrumpolice/scrumpolice
+go get github.com/scrumpolice/scrumpolice
 cd $HOME/go/src/github.com/scrumpolice/scrumpolice
+dep ensure
 # Run it
-go run cmd/scrumpolice/scrumpolice.go
+SCRUMPOLICE_SLACK_TOKEN=xoxb-mytoken go run cmd/scrumpolice/scrumpolice.go -config config.example.json
 ```

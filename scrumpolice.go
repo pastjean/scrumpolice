@@ -18,7 +18,7 @@ const header = "                                           _ _\n" +
 	"|___/\\___|_|   \\__,_|_| |_| |_| .__/ \\___/|_|_|\\___\\___|\n" +
 	"                              |_|"
 
-const Version = "0.5.0-beta0"
+const Version = "0.2.0"
 
 func main() {
 	fmt.Println(header)
@@ -39,7 +39,7 @@ func main() {
 	logger := log.New(os.Stderr, "", log.Lshortfile)
 	configurationProvider := scrum.NewConfigWatcher(configFile)
 	slackAPIClient := slack.New(slackBotToken)
-	scrum := scrum.NewModule(configurationProvider, slackAPIClient)
+	scrum := scrum.NewService(configurationProvider, slackAPIClient)
 
 	// Create and run bot
 	b := bot.New(slackAPIClient, logger, scrum)

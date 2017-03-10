@@ -15,7 +15,14 @@ var (
 	SlackParams = slack.PostMessageParameters{AsUser: true}
 )
 
-type Module struct {
+type Service interface {
+	DeleteLastReport(username string) bool
+	GetTeamsForUser(username string) []string
+	GetQuestionSetsForTeam(team string) []*QuestionSet
+	SaveReport(report *Report, qs *QuestionSet)
+}
+
+type service struct {
 	configurationProvider ConfigurationProvider
 	teamStates            map[string]*TeamState
 	slackBotAPI           *slack.Client
@@ -25,7 +32,7 @@ type Module struct {
 type TeamState struct {
 	*Team
 	*cron.Cron
-	*Module
+	*service
 
 	questionSetStates map[*QuestionSet]*questionSetState
 }
@@ -55,11 +62,11 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 	qsstate.sent = true
 
 	if len(qsstate.enteredReports) == 0 {
-		ts.Module.slackBotAPI.PostMessage(ts.Channel, "I'd like to take time to :shame: everyone for not reporting", SlackParams)
+		ts.service.slackBotAPI.PostMessage(ts.Channel, "I'd like to take time to :shame: everyone for not reporting", SlackParams)
 		return
 	}
 
-	ts.Module.slackBotAPI.PostMessage(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", SlackParams)
+	ts.service.slackBotAPI.PostMessage(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", SlackParams)
 
 	attachments := make([]slack.Attachment, 0, len(qsstate.enteredReports))
 	didNotDoReport := []string{}
@@ -90,7 +97,7 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 	}
 
 	if len(didNotDoReport) > 0 {
-		ts.Module.slackBotAPI.PostMessage(ts.Channel, fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), params)
+		ts.service.slackBotAPI.PostMessage(ts.Channel, fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), params)
 	}
 }
 
@@ -100,7 +107,7 @@ func (ts *TeamState) sendFirstReminder(qs *QuestionSet) {
 	for _, member := range ts.Members {
 		_, ok := qsstate.enteredReports[member]
 		if !ok {
-			ts.Module.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report", SlackParams)
+			ts.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report", SlackParams)
 		}
 	}
 }
@@ -120,7 +127,7 @@ func (ts *TeamState) sendLastReminder(qs *QuestionSet) {
 	}
 
 	memberThatDidNotDoReport := strings.Join(didNotDoReport, ", ")
-	ts.Module.slackBotAPI.PostMessage(ts.Channel, fmt.Sprintf("Last chance to fill report! :shame: to: %s", memberThatDidNotDoReport), SlackParams)
+	ts.service.slackBotAPI.PostMessage(ts.Channel, fmt.Sprintf("Last chance to fill report! :shame: to: %s", memberThatDidNotDoReport), SlackParams)
 }
 
 type ScrumReportJob struct {
@@ -159,26 +166,26 @@ func (job *ScrumReminderJob) Run() {
 	}
 }
 
-func NewModule(configurationProvider ConfigurationProvider, slackBotAPI *slack.Client) *Module {
-	mod := &Module{
+func NewService(configurationProvider ConfigurationProvider, slackBotAPI *slack.Client) Service {
+	mod := &service{
 		configurationProvider: configurationProvider,
 		slackBotAPI:           slackBotAPI,
 		teamStates:            map[string]*TeamState{},
 		lastEnteredReport:     map[string]*Report{},
 	}
 
-	mod.refresh()
+	// initial *refresh
+	mod.refresh(configurationProvider.Config())
 
-	configurationProvider.OnChange(func() {
+	configurationProvider.OnChange(func(cfg *Config) {
 		log.Println("Configuration File Changed refreshing state")
-		mod.refresh()
+		mod.refresh(cfg)
 	})
 
 	return mod
 }
 
-func (mod *Module) refresh() {
-	config := mod.configurationProvider.Config()
+func (mod *service) refresh(config *Config) {
 	teams := config.ToTeams()
 
 	globalLocation := time.Local
@@ -205,10 +212,10 @@ func (mod *Module) refresh() {
 	}
 }
 
-func initTeamState(team *Team, globalLocation *time.Location, mod *Module) *TeamState {
+func initTeamState(team *Team, globalLocation *time.Location, mod *service) *TeamState {
 	state := &TeamState{
 		Team:              team,
-		Module:            mod,
+		service:           mod,
 		questionSetStates: map[*QuestionSet]*questionSetState{},
 	}
 
@@ -254,7 +261,7 @@ func (s *scheduleDependentSchedule) Next(t time.Time) time.Time {
 	return s.depNext.Add(s.Duration)
 }
 
-func (m *Module) GetTeamsForUser(username string) []string {
+func (m *service) GetTeamsForUser(username string) []string {
 	teams := []string{}
 	for _, ts := range m.teamStates {
 		for _, member := range ts.Members {
@@ -267,11 +274,11 @@ func (m *Module) GetTeamsForUser(username string) []string {
 	return teams
 }
 
-func (m *Module) GetQuestionSetsForTeam(team string) []*QuestionSet {
+func (m *service) GetQuestionSetsForTeam(team string) []*QuestionSet {
 	return m.teamStates[team].QuestionsSets
 }
 
-func (m *Module) SaveReport(report *Report, qs *QuestionSet) {
+func (m *service) SaveReport(report *Report, qs *QuestionSet) {
 	m.lastEnteredReport[report.User] = report
 	m.teamStates[report.Team].questionSetStates[qs].enteredReports[report.User] = report
 
@@ -281,7 +288,7 @@ func (m *Module) SaveReport(report *Report, qs *QuestionSet) {
 	}
 }
 
-func (m *Module) DeleteLastReport(user string) bool {
+func (m *service) DeleteLastReport(user string) bool {
 
 	r, ok := m.lastEnteredReport[user]
 	if !ok {

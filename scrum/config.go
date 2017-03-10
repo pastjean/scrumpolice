@@ -6,14 +6,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/robfig/cron"
-	fsnotify "gopkg.in/fsnotify.v1"
 )
 
 type (
 	ConfigurationProvider interface {
 		Config() *Config
-		OnChange(handler func())
+		OnChange(handler func(cfg *Config))
 	}
 
 	// Config is the configuration format
@@ -55,7 +55,7 @@ type (
 
 type configFileWatcher struct {
 	config         *Config
-	changeHandlers []func()
+	changeHandlers []func(cfg *Config)
 }
 
 func NewConfigWatcher(file string) ConfigurationProvider {
@@ -64,7 +64,7 @@ func NewConfigWatcher(file string) ConfigurationProvider {
 		log.Fatal(err)
 	}
 
-	fw := &configFileWatcher{changeHandlers: []func(){}}
+	fw := &configFileWatcher{changeHandlers: []func(cfg *Config){}}
 	go func() {
 		defer watcher.Close()
 		for {
@@ -94,7 +94,7 @@ func (fw *configFileWatcher) Config() *Config {
 	return fw.config
 }
 
-func (fw *configFileWatcher) OnChange(handler func()) {
+func (fw *configFileWatcher) OnChange(handler func(cfg *Config)) {
 	fw.changeHandlers = append(fw.changeHandlers, handler)
 }
 
@@ -109,7 +109,7 @@ func (fw *configFileWatcher) reloadAndDistributeChange(filename string) {
 	}
 
 	for _, handler := range fw.changeHandlers {
-		go handler()
+		go handler(fw.config)
 	}
 }
 
