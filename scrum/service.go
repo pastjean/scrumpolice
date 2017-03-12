@@ -107,7 +107,7 @@ func (ts *TeamState) sendFirstReminder(qs *QuestionSet) {
 	for _, member := range ts.Members {
 		_, ok := qsstate.enteredReports[member]
 		if !ok {
-			ts.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report", SlackParams)
+			ts.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report! `start scrum` to do it", SlackParams)
 		}
 	}
 }

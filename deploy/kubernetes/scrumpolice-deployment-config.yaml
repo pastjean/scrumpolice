@@ -9,27 +9,27 @@ spec:
       labels:
         app: scrumpolice
     spec:
-    volumes:
-      - name: config-volume
-        configMap:
-          name: scrumpoliceconfig
       containers:
       - name: scrumpolice
-        image: pastjean/scrumpolice:v0.5.0
-        args: config /etc/config/config.json
+        image: pastjean/scrumpolice:v0.6.3
+        args: ["-config", "/config/config.json"]
         resources:
           requests:
-            memory: "100mi"
+            memory: "64Mi"
             cpu: "100m"
           limits:
-            memory: "150mi"
+            memory: "128Mi"
         volumeMounts:
-        - name: config-volume
-          mountPath: /etc/config
+        - name: configvolume
+          mountPath: /config
           readOnly: true
         env:
         - name: SCRUMPOLICE_SLACK_TOKEN
           value: xoxb-putyourtokehere
+      volumes:
+      - name: configvolume
+        configMap:
+          name: scrumpoliceconfig
 
 ---
 

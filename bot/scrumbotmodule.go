@@ -156,6 +156,7 @@ func (b *Bot) answerQuestions(event *slack.MessageEvent, questionSet *scrum.Ques
 	if ans == len(questionSet.Questions) {
 		b.scrum.SaveReport(report, questionSet)
 		b.slackBotAPI.PostMessage(event.Channel, "Thanks for your scrum report my :deer:! :bear: with us for the digest. :owl: see you later!\n If you want to start again just say `restart scrum`", slack.PostMessageParameters{AsUser: true})
+		b.unsetUserContext(event.User)
 		return false
 	}
 
