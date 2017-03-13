@@ -66,9 +66,7 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 		return
 	}
 
-	ts.service.slackBotAPI.PostMessage(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", SlackParams)
-
-	attachments := make([]slack.Attachment, 0, len(qsstate.enteredReports))
+	attachments := []slack.Attachment{}
 	didNotDoReport := []string{}
 	for _, member := range ts.Members {
 		report, ok := qsstate.enteredReports[member]
@@ -96,8 +94,10 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 		Attachments: attachments,
 	}
 
+	ts.service.slackBotAPI.PostMessage(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", params)
+
 	if len(didNotDoReport) > 0 {
-		ts.service.slackBotAPI.PostMessage(ts.Channel, fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), params)
+		ts.service.slackBotAPI.PostMessage(ts.Channel, fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), SlackParams)
 	}
 }
 
