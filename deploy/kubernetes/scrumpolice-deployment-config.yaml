@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
       - name: scrumpolice
-        image: pastjean/scrumpolice:v0.6.3
+        image: pastjean/scrumpolice:v0.7.1
         args: ["-config", "/config/config.json"]
         resources:
           requests:
@@ -39,30 +39,30 @@ metadata:
   name: scrumpoliceconfig
 data:
   config.json: |-
-  {
-    "timezone": "America/Montreal",
-    "teams": [
-      {
-        "channel": "general",
-        "name": "L337",
-        "members": [
-          "fboutin2",
-          "lbourdages",
-          "pa"
-        ],
-        "question_sets": [
-          {
-            "questions": [
-              "What did you do yesterday?",
-              "What will you do today?",
-              "Are you being blocked by someone for a review? who ? why ?",
-              "How will you dominate the world"
-            ],
-            "report_schedule_cron": "@every 10s",
-            "first_reminder_limit": "-8s",
-            "last_reminder_limit": "-3s"
-          }
-        ]
-      }
-    ]
-  }
+    {
+      "timezone": "America/Montreal",
+      "teams": [
+        {
+          "channel": "general",
+          "name": "L337",
+          "members": [
+            "fboutin2",
+            "lbourdages",
+            "pa"
+          ],
+          "question_sets": [
+            {
+              "questions": [
+                "What did you do yesterday?",
+                "What will you do today?",
+                "Are you being blocked by someone for a review? who ? why ?",
+                "How will you dominate the world"
+              ],
+              "report_schedule_cron": "@every 10s",
+              "first_reminder_limit": "-8s",
+              "last_reminder_limit": "-3s"
+            }
+          ]
+        }
+      ]
+    }

@@ -22,6 +22,7 @@ Create your configuration file:
 
 ```json
 {
+  "timezone": "America/Montreal",
   "teams": [
     {
       "channel": "themostaswesometeamchannel",
@@ -39,9 +40,9 @@ Create your configuration file:
             "Are you being blocked by someone for a review? who ? why ?",
             "How will you dominate the world"
           ],
-          "report_schedule_cron": "0 0 8 * * 1-5",
-          "first_reminder_limit": "+55m",
-          "last_reminder_limit": "+65m"
+          "report_schedule_cron": "0 5 9 * * 1-5",
+          "first_reminder_limit": "-50m",
+          "last_reminder_limit": "-5m"
         }
       ]
     }
