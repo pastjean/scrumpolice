@@ -132,19 +132,23 @@ func (tc *TeamConfig) ToTeam() *Team {
 		}
 	}
 
-	loc, err := time.LoadLocation(tc.Timezone)
-	if err != nil {
-		log.Println("Timezone error for team:", tc.Name, "Will use default timezone")
-		loc = nil
-	}
-
-	return &Team{
+	t := &Team{
 		Name:          tc.Name,
 		Channel:       tc.Channel,
 		Members:       tc.Members,
-		Timezone:      loc,
 		QuestionsSets: qsets,
 	}
+
+	if tc.Timezone != "" {
+		lloc, err := time.LoadLocation(tc.Timezone)
+		if err != nil {
+			log.Println("Timezone error for team:", tc.Name, "Will use default timezone")
+			lloc = nil
+		}
+		t.Timezone = lloc
+	}
+
+	return t
 }
 
 func (qs *QuestionSetConfig) toQuestionSet() (*QuestionSet, error) {

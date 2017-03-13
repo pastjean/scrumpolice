@@ -233,6 +233,7 @@ func initTeamState(team *Team, globalLocation *time.Location, mod *service) *Tea
 	}
 
 	state.Cron.Start()
+
 	return state
 }
 
