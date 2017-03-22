@@ -16,7 +16,6 @@ type (
 
 		userContextsMutex sync.Mutex
 		userContexts      map[string]BotContextHandler
-		userRestartScrum  map[string]func() bool
 
 		scrum scrum.Service
 
