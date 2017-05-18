@@ -44,7 +44,7 @@ func (b *Bot) restartScrum(event *slack.MessageEvent) bool {
 		return false
 	}
 
-	if b.scrum.DeleteLastReport(user.Name) {
+	if !b.scrum.DeleteLastReport(user.Name) {
 		b.slackBotAPI.PostMessage(event.Channel, "Nothing to restart, let's get out", slack.PostMessageParameters{AsUser: true})
 		return false
 	}
@@ -88,7 +88,7 @@ func (b *Bot) chooseTeam(event *slack.MessageEvent, username string, teams []str
 		i, err := strconv.Atoi(event.Text)
 
 		if i < 0 || i >= len(teams) || err != nil {
-			b.slackBotAPI.PostMessage(event.Channel, "Wrong choices, please try again :p or `quit`", slack.PostMessageParameters{AsUser: true})
+			b.slackBotAPI.PostMessage(event.Channel, "Wrong choices, please try again :p or type `quit`", slack.PostMessageParameters{AsUser: true})
 			b.chooseTeam(event, username, teams)
 			return false
 		}
@@ -128,7 +128,7 @@ func (b *Bot) chooseContext(event *slack.MessageEvent, username string, team str
 		i, err := strconv.Atoi(event.Text)
 
 		if i < 0 || i >= len(questionSets) || err != nil {
-			b.slackBotAPI.PostMessage(event.Channel, "Wrong choices, please try again :p or `quit`", slack.PostMessageParameters{AsUser: true})
+			b.slackBotAPI.PostMessage(event.Channel, "Wrong choices, please try again :p or type `quit`", slack.PostMessageParameters{AsUser: true})
 			b.chooseContext(event, username, team, questionSets)
 			return false
 		}
@@ -140,7 +140,7 @@ func (b *Bot) chooseContext(event *slack.MessageEvent, username string, team str
 }
 
 func (b *Bot) choosenTeamAndContext(event *slack.MessageEvent, username string, team string, questionSet *scrum.QuestionSet) bool {
-	msg := fmt.Sprintf("Scrum report started %s for team %s", username, team)
+	msg := fmt.Sprintf("Scrum report started %s for team %s, type `quit` anytime to stop", username, team)
 	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
 
 	return b.answerQuestions(event, questionSet, &scrum.Report{
