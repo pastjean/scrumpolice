@@ -2,6 +2,7 @@ package bot
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -77,6 +78,7 @@ func (b *Bot) startScrum(event *slack.MessageEvent) bool {
 
 func (b *Bot) chooseTeam(event *slack.MessageEvent, username string, teams []string) bool {
 	choices := make([]string, len(teams))
+	sort.Strings(teams)
 	for i, team := range teams {
 		choices[i] = fmt.Sprintf("%d - %s", i, team)
 	}
