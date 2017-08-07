@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/nlopes/slack"
-	"github.com/scrumpolice/scrumpolice/bot"
-	"github.com/scrumpolice/scrumpolice/scrum"
+	"github.com/pastjean/scrumpolice/bot"
+	"github.com/pastjean/scrumpolice/scrum"
 )
 
 const header = "                                           _ _\n" +

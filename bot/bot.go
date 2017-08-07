@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/nlopes/slack"
-	"github.com/scrumpolice/scrumpolice/scrum"
+	"github.com/pastjean/scrumpolice/scrum"
 )
 
 type (
@@ -159,7 +159,7 @@ func (b *Bot) reactToEvent(event *slack.MessageEvent, reaction string) {
 
 func (b *Bot) sourceCode(event *slack.MessageEvent) {
 	params := slack.PostMessageParameters{AsUser: true}
-	_, _, err := b.slackBotAPI.PostMessage(event.Channel, "My source code is here <https://github.com/scrumpolice/scrumpolice>", params)
+	_, _, err := b.slackBotAPI.PostMessage(event.Channel, "My source code is here <https://github.com/pastjean/scrumpolice>", params)
 	if err != nil {
 		b.logger.Printf("%s\n", err)
 		return

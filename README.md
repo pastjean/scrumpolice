@@ -7,8 +7,8 @@
                               |_|
 ```
 
-[![Build Status](https://travis-ci.org/scrumpolice/scrumpolice.svg?branch=master)](https://travis-ci.org/scrumpolice/scrumpolice)
-[![Go Report Card](https://goreportcard.com/badge/github.com/scrumpolice/scrumpolice)](https://goreportcard.com/report/github.com/scrumpolice/scrumpolice)
+[![Build Status](https://travis-ci.org/pastjean/scrumpolice.svg?branch=master)](https://travis-ci.org/pastjean/scrumpolice)
+[![Go Report Card](https://goreportcard.com/badge/github.com/pastjean/scrumpolice)](https://goreportcard.com/report/github.com/pastjean/scrumpolice)
 
 Scrum bot ask every member of your team for a scrum report then reports it to
 your team's channel at a predefined time.
@@ -62,8 +62,8 @@ Have a working go environment (since 1.8 just install go) otherwise you need the
 `$GOPATH` set and use that instead of `$HOME/go`.
 
 ```sh
-go get github.com/scrumpolice/scrumpolice
-cd $HOME/go/src/github.com/scrumpolice/scrumpolice
+go get github.com/pastjean/scrumpolice
+cd $HOME/go/src/github.com/pastjean/scrumpolice
 dep ensure
 # Run it
 SCRUMPOLICE_SLACK_TOKEN=xoxb-mytoken go run cmd/scrumpolice/scrumpolice.go -config config.example.json
