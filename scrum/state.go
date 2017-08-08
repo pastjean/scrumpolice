@@ -13,6 +13,7 @@ type (
 		Members       []string
 		QuestionsSets []*QuestionSet
 		Timezone      *time.Location
+		OutOfOffice   []string
 	}
 
 	QuestionSet struct {
