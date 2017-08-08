@@ -63,7 +63,7 @@ Have a working go environment (since 1.8 just install go) otherwise you need the
 ```sh
 go get github.com/pastjean/scrumpolice
 cd $HOME/go/src/github.com/pastjean/scrumpolice
-go get ./...
+dep ensure
 # Run it
 SCRUMPOLICE_SLACK_TOKEN=xoxb-mytoken go run cmd/scrumpolice/scrumpolice.go -config config.example.json
 ```
