@@ -20,6 +20,8 @@ type Service interface {
 	GetTeamsForUser(username string) []string
 	GetQuestionSetsForTeam(team string) []*QuestionSet
 	SaveReport(report *Report, qs *QuestionSet)
+	AddToOutOfOffice(team string, username string)
+	RemoveFromOutOfOffice(team string, username string)
 }
 
 type service struct {
@@ -54,6 +56,17 @@ func emptyQuestionSetState(qs *QuestionSet) *questionSetState {
 	return &questionSetState{qs, map[string]*Report{}, false}
 }
 
+func isMemberOutOfOffice(ts *TeamState, member string) bool {
+	isOutOfOffice := false
+	for _, outOfOfficeMember := range ts.OutOfOffice {
+		if outOfOfficeMember == member {
+			isOutOfOffice = true
+			break
+		}
+	}
+	return isOutOfOffice
+}
+
 func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 	qsstate := ts.questionSetStates[qs]
 	if qsstate.sent == true {
@@ -71,7 +84,17 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 	for _, member := range ts.Members {
 		report, ok := qsstate.enteredReports[member]
 		if !ok {
-			didNotDoReport = append(didNotDoReport, member)
+			if isMemberOutOfOffice(ts, member) {
+				attachment := slack.Attachment{
+					Color:      colorful.FastHappyColor().Hex(),
+					MarkdownIn: []string{"text", "pretext"},
+					Pretext:    member,
+					Text:       "I am currently out of office :sunglasses: :palm_tree:",
+				}
+				attachments = append(attachments, attachment)
+			} else {
+				didNotDoReport = append(didNotDoReport, member)
+			}
 		} else {
 			message := ""
 			for _, q := range qsstate.QuestionSet.Questions {
@@ -105,9 +128,11 @@ func (ts *TeamState) sendFirstReminder(qs *QuestionSet) {
 	qsstate := ts.questionSetStates[qs]
 
 	for _, member := range ts.Members {
-		_, ok := qsstate.enteredReports[member]
-		if !ok {
-			ts.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report! `start scrum` to do it", SlackParams)
+		if !isMemberOutOfOffice(ts, member) {
+			_, ok := qsstate.enteredReports[member]
+			if !ok {
+				ts.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report! `start scrum` to do it", SlackParams)
+			}
 		}
 	}
 }
@@ -116,9 +141,11 @@ func (ts *TeamState) sendLastReminder(qs *QuestionSet) {
 	qsstate := ts.questionSetStates[qs]
 	didNotDoReport := []string{}
 	for _, member := range ts.Members {
-		_, ok := qsstate.enteredReports[member]
-		if !ok {
-			didNotDoReport = append(didNotDoReport, member)
+		if !isMemberOutOfOffice(ts, member) {
+			_, ok := qsstate.enteredReports[member]
+			if !ok {
+				didNotDoReport = append(didNotDoReport, member)
+			}
 		}
 	}
 
@@ -311,4 +338,18 @@ func (m *service) DeleteLastReport(user string) bool {
 	}
 
 	return false
+}
+
+func (m *service) AddToOutOfOffice(team string, username string) {
+	m.teamStates[team].OutOfOffice = append(m.teamStates[team].OutOfOffice, username)
+}
+
+func (m *service) RemoveFromOutOfOffice(team string, username string) {
+	var ooof []string
+	for _, outOfOfficeMember := range m.teamStates[team].OutOfOffice {
+		if outOfOfficeMember != username {
+			ooof = append(ooof, outOfOfficeMember)
+		}
+	}
+	m.teamStates[team].OutOfOffice = ooof
 }

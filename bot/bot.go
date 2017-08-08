@@ -118,6 +118,16 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		return
 	}
 
+	if eventText == "out of office" {
+		b.outOfOffice(event)
+		return
+	}
+
+	if eventText == "i'm back" {
+		b.backInOffice(event)
+		return
+	}
+
 	// Unrecogned message so let's help the user
 	b.unrecognizedMessage(event)
 	return
@@ -183,6 +193,40 @@ func (b *Bot) help(event *slack.MessageEvent) {
 		b.logger.Printf("%s\n", err)
 		return
 	}
+}
+
+func (b *Bot) outOfOffice(event *slack.MessageEvent) {
+	params := slack.PostMessageParameters{AsUser: true}
+	user, err := b.slackBotAPI.GetUserInfo(event.User)
+	if err != nil {
+		b.slackBotAPI.PostMessage(event.Channel, "Hmmmm, I couldn't find you. Try again!", params)
+		return
+	}
+	username := user.Name
+
+	teams := b.scrum.GetTeamsForUser(username)
+
+	for _, team := range teams {
+		b.scrum.AddToOutOfOffice(team, username)
+	}
+	b.slackBotAPI.PostMessage(event.Channel, "I've marked you out of office in all your teams", params)
+}
+
+func (b *Bot) backInOffice(event *slack.MessageEvent) {
+	params := slack.PostMessageParameters{AsUser: true}
+	user, err := b.slackBotAPI.GetUserInfo(event.User)
+	if err != nil {
+		b.slackBotAPI.PostMessage(event.Channel, "Hmmmm, I couldn't find you. Try again!", params)
+		return
+	}
+	username := user.Name
+
+	teams := b.scrum.GetTeamsForUser(username)
+
+	for _, team := range teams {
+		b.scrum.RemoveFromOutOfOffice(team, username)
+	}
+	b.slackBotAPI.PostMessage(event.Channel, "I've marked you in office in all your teams. Welcome back!", params)
 }
 
 func (b *Bot) unrecognizedMessage(event *slack.MessageEvent) {
