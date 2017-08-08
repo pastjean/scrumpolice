@@ -15,10 +15,9 @@ your team's channel at a predefined time.
 
 - [Jason Fried's - Status meetings are the scourge](https://m.signalvnoise.com/status-meetings-are-the-scourge-39f49267ca90) started all the fuzz.
 
-# Usage 
+# Usage
 
-
-Create your configuration file: 
+Create your configuration file:
 
 ```json
 {
@@ -64,7 +63,7 @@ Have a working go environment (since 1.8 just install go) otherwise you need the
 ```sh
 go get github.com/pastjean/scrumpolice
 cd $HOME/go/src/github.com/pastjean/scrumpolice
-dep ensure
+go get ./...
 # Run it
 SCRUMPOLICE_SLACK_TOKEN=xoxb-mytoken go run cmd/scrumpolice/scrumpolice.go -config config.example.json
 ```
