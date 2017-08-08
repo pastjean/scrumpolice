@@ -183,8 +183,8 @@ func (b *Bot) help(event *slack.MessageEvent) {
 			"- `help`: well, this command\n" +
 			"- `start scrum`: starts a scrum for a team and a specific set of questions, defaults to your only team if you got only one, and only questions set if there's only one on the team you chose\n" +
 			"- `restart scrum`: restart your last done scrum, if it wasn't posted\n" +
-			"- `out of office: mark current user as out of office (until `i'm back` is used)\n" +
-			"- `i'm back: mark current user as in office",
+			"- `out of office`: mark current user as out of office (until `i'm back` is used)\n" +
+			"- `i'm back`: mark current user as in office",
 	}
 
 	params := slack.PostMessageParameters{AsUser: true}
