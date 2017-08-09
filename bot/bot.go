@@ -2,11 +2,16 @@ package bot
 
 import (
 	"log"
+	"regexp"
 	"strings"
 	"sync"
 
 	"github.com/nlopes/slack"
 	"github.com/pastjean/scrumpolice/scrum"
+)
+
+var (
+	OutOfOfficeRegex, _ = regexp.Compile("(\\w+) is out of office")
 )
 
 type (
@@ -119,7 +124,12 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 	}
 
 	if eventText == "out of office" {
-		b.outOfOffice(event)
+		b.outOfOffice(event, event.User, true)
+		return
+	}
+
+	if OutOfOfficeRegex.MatchString(eventText) {
+		b.outOfOffice(event, strings.Split(strings.Trim(eventText, " "), " ")[0], false)
 		return
 	}
 
@@ -197,21 +207,34 @@ func (b *Bot) help(event *slack.MessageEvent) {
 	}
 }
 
-func (b *Bot) outOfOffice(event *slack.MessageEvent) {
+func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string, resolveUser bool) {
 	params := slack.PostMessageParameters{AsUser: true}
-	user, err := b.slackBotAPI.GetUserInfo(event.User)
-	if err != nil {
-		b.slackBotAPI.PostMessage(event.Channel, "Hmmmm, I couldn't find you. Try again!", params)
-		return
+	username := userId
+	if resolveUser {
+		user, err := b.slackBotAPI.GetUserInfo(userId)
+		if err != nil {
+			b.slackBotAPI.PostMessage(event.Channel, "Hmmmm, I couldn't find you. Try again!", params)
+			return
+		}
+		username = user.Name
 	}
-	username := user.Name
 
 	teams := b.scrum.GetTeamsForUser(username)
 
 	for _, team := range teams {
 		b.scrum.AddToOutOfOffice(team, username)
 	}
-	b.slackBotAPI.PostMessage(event.Channel, "I've marked you out of office in all your teams", params)
+	if event.User == userId {
+		b.slackBotAPI.PostMessage(event.Channel, "I've marked you out of office in all your teams", params)
+	} else {
+		b.slackBotAPI.PostMessage(event.Channel, "I've marked @"+userId+" out of office in all of his teams", params)
+
+		user, err := b.slackBotAPI.GetUserInfo(event.User)
+		if err != nil {
+			return
+		}
+		b.slackBotAPI.PostMessage("@"+userId, "You've been marked out of office by @"+user.Name+".", params)
+	}
 }
 
 func (b *Bot) backInOffice(event *slack.MessageEvent) {
