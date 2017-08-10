@@ -1,6 +1,7 @@
 package scrum
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -17,6 +18,7 @@ var (
 
 type Service interface {
 	DeleteLastReport(username string) bool
+	GetTeamByName(teamName string) (*TeamState, error)
 	GetTeamsForUser(username string) []string
 	GetQuestionSetsForTeam(team string) []*QuestionSet
 	SaveReport(report *Report, qs *QuestionSet)
@@ -300,6 +302,15 @@ func (m *service) GetTeamsForUser(username string) []string {
 	}
 
 	return teams
+}
+
+func (m *service) GetTeamByName(teamName string) (*TeamState, error) {
+	for _, ts := range m.teamStates {
+		if teamName == ts.Team.Name {
+			return ts, nil
+		}
+	}
+	return nil, errors.New("Team " + teamName + " does not exist")
 }
 
 func (m *service) GetQuestionSetsForTeam(team string) []*QuestionSet {

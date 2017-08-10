@@ -7,7 +7,8 @@
       "members": [
         "fboutin2",
         "lbourdages",
-        "pa"
+        "pa",
+        "jo"
       ],
       "question_sets": [
         {
@@ -17,7 +18,7 @@
             "Are you being blocked by someone for a review? who ? why ?",
             "How will you dominate the world"
           ],
-          "report_schedule_cron": "@every 10s",
+          "report_schedule_cron": "@every 30s",
           "first_reminder_limit": "-8s",
           "last_reminder_limit": "-3s"
         }
