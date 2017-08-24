@@ -114,12 +114,22 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 
 	}
 
-	params := slack.PostMessageParameters{
-		AsUser:      true,
-		Attachments: attachments,
+	if ts.SplitReport {
+		ts.service.slackBotAPI.PostMessage(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", slack.PostMessageParameters{AsUser: true})
+		for i := 0; i < len(attachments); i++ {
+			params := slack.PostMessageParameters{
+				AsUser:      true,
+				Attachments: []slack.Attachment{attachments[i]},
+			}
+			ts.service.slackBotAPI.PostMessage(ts.Channel, "*Scrum by*", params)
+		}
+	} else {
+		params := slack.PostMessageParameters{
+			AsUser:      true,
+			Attachments: attachments,
+		}
+		ts.service.slackBotAPI.PostMessage(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", params)
 	}
-
-	ts.service.slackBotAPI.PostMessage(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", params)
 
 	if len(didNotDoReport) > 0 {
 		ts.service.slackBotAPI.PostMessage(ts.Channel, fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), SlackParams)

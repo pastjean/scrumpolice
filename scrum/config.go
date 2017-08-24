@@ -10,6 +10,35 @@ import (
 	"github.com/robfig/cron"
 )
 
+// {
+//   "timezone": "America/Montreal",
+//   "teams": [
+//     {
+//       "channel": "general",
+//       "name": "L337",
+//       "members": [
+//         "fboutin2",
+//         "lbourdages",
+//         "pa",
+//         "jo"
+//       ],
+//       "split_report": false,
+//       "question_sets": [
+//         {
+//           "questions": [
+//             "What did you do yesterday?",
+//             "What will you do today?",
+//             "Are you being blocked by someone for a review? who ? why ?",
+//             "How will you dominate the world"
+//           ],
+//           "report_schedule_cron": "@every 30s",
+//           "first_reminder_limit": "-8s",
+//           "last_reminder_limit": "-3s"
+//         }
+//       ]
+//     }
+//   ]
+// }
 type (
 	ConfigurationProvider interface {
 		Config() *Config
@@ -22,27 +51,13 @@ type (
 		Teams    []TeamConfig `json:"teams"`
 	}
 
-	// TeamConfig is the file format for the configuration of a team in json
-	//	{
-	//	"channel": "analyticsinternal",
-	//	"name": "Usage Analytics",
-	//	"members": ["@jrochette", "@pastjean", "@lbourdages", "@gbergeron", "@mlachapelle", "@aemond", "@gprovost"],
-	//	"question_sets": [{
-	//	  "questions":  [
-	//	    "What did you do yesterday? _(jira if needed)_",
-	//	    "What will you do today?",
-	//	    "Are you being blocked by someone for a review? who ? why ?"
-	//	  ],
-	//	"report_schedule_cron": "0 0 8 * * MON",
-	//	"first_reminder_limit": "+55m",
-	//	"last_reminder_limit": "+65m"
-	//	}
 	TeamConfig struct {
 		Name         string              `json:"name"`
 		Channel      string              `json:"channel"`
 		Members      []string            `json:"members"`
 		QuestionSets []QuestionSetConfig `json:"question_sets"`
 		Timezone     string              `json:"timezone"`
+		SplitReport  bool                `json:"split_report"`
 	}
 
 	QuestionSetConfig struct {
@@ -137,6 +152,7 @@ func (tc *TeamConfig) ToTeam() *Team {
 		Channel:       tc.Channel,
 		Members:       tc.Members,
 		QuestionsSets: qsets,
+		SplitReport:   tc.SplitReport,
 	}
 
 	if tc.Timezone != "" {

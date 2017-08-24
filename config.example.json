@@ -10,6 +10,7 @@
         "pa",
         "jo"
       ],
+      "split_report": true,
       "question_sets": [
         {
           "questions": [
