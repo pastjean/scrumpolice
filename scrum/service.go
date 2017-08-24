@@ -48,8 +48,9 @@ type questionSetState struct {
 }
 
 type Report struct {
-	User string
-	Team string
+	User    string
+	Team    string
+	Skipped bool
 	// questions / answers
 	Answers map[string]string
 }
@@ -97,6 +98,14 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 			} else {
 				didNotDoReport = append(didNotDoReport, member)
 			}
+		} else if report.Skipped {
+			attachment := slack.Attachment{
+				Color:      colorful.FastHappyColor().Hex(),
+				MarkdownIn: []string{"text", "pretext"},
+				Pretext:    member,
+				Text:       "Has nothing to declare (most probably :bee:cause he did nothing :troll:)",
+			}
+			attachments = append(attachments, attachment)
 		} else {
 			message := ""
 			for _, q := range qsstate.QuestionSet.Questions {
@@ -133,7 +142,7 @@ func (ts *TeamState) sendFirstReminder(qs *QuestionSet) {
 		if !isMemberOutOfOffice(ts, member) {
 			_, ok := qsstate.enteredReports[member]
 			if !ok {
-				ts.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report! `start scrum` to do it", SlackParams)
+				ts.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report! `start scrum` to do it or `skip` if you have nothing to say", SlackParams)
 			}
 		}
 	}
