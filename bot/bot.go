@@ -133,7 +133,7 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		return
 	}
 
-	if eventText == "i'm back" {
+	if eventText == "i'm back" || eventText == "i am back" {
 		b.backInOffice(event)
 		return
 	}
@@ -195,7 +195,7 @@ func (b *Bot) help(event *slack.MessageEvent) {
 			"- `restart scrum`: restart your last done scrum, if it wasn't posted\n" +
 			"- `out of office`: mark current user as out of office (until `i'm back` is used)\n" +
 			"- `[user] is out of office`: mark the specified user as out of office (until he or she uses `i'm back`)\n" +
-			"- `i'm back`: mark current user as in office",
+			"- `i am back` or `i'm back`: mark current user as in office. MacOS smart quote can screw up with the `i'm back` command.",
 	}
 
 	params := slack.PostMessageParameters{AsUser: true}
