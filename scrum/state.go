@@ -14,6 +14,7 @@ type (
 		QuestionsSets []*QuestionSet
 		Timezone      *time.Location
 		OutOfOffice   []string
+		SplitReport   bool
 	}
 
 	QuestionSet struct {

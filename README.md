@@ -31,6 +31,7 @@ Create your configuration file:
         "@lbourdages",
         "@pastjean"
       ],
+      "split_report": true,
       "question_sets": [
         {
           "questions": [
@@ -48,6 +49,8 @@ Create your configuration file:
   ]
 }
 ```
+
+`split_report` whether to post each scrum entry as a separate messages or post all post all scrum entries in the same message.
 
 Run the bot with a slack bot user token
 
