@@ -3,13 +3,13 @@ package scrum
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/nlopes/slack"
 	"github.com/robfig/cron"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -124,10 +124,20 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 	if len(didNotDoReport) > 0 {
 		ts.service.slackBotAPI.PostMessage(ts.Channel, fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), SlackParams)
 	}
+
+	log.WithFields(log.Fields{
+		"team":    ts.Team.Name,
+		"channel": ts.Channel,
+	}).Info("Sent scrum report.")
 }
 
 func (ts *TeamState) sendFirstReminder(qs *QuestionSet) {
 	qsstate := ts.questionSetStates[qs]
+
+	log.WithFields(log.Fields{
+		"team":    ts.Team.Name,
+		"channel": ts.Channel,
+	}).Info("Sending first reminder.")
 
 	for _, member := range ts.Members {
 		if !isMemberOutOfOffice(ts, member) {
@@ -142,6 +152,12 @@ func (ts *TeamState) sendFirstReminder(qs *QuestionSet) {
 func (ts *TeamState) sendLastReminder(qs *QuestionSet) {
 	qsstate := ts.questionSetStates[qs]
 	didNotDoReport := []string{}
+
+	log.WithFields(log.Fields{
+		"team":    ts.Team.Name,
+		"channel": ts.Channel,
+	}).Info("Sending last reminder.")
+
 	for _, member := range ts.Members {
 		if !isMemberOutOfOffice(ts, member) {
 			_, ok := qsstate.enteredReports[member]
@@ -217,23 +233,31 @@ func NewService(configurationProvider ConfigurationProvider, slackBotAPI *slack.
 func (mod *service) refresh(config *Config) {
 	teams := config.ToTeams()
 
+	log.Info("Refreshing teams.")
+
 	globalLocation := time.Local
 	if config.Timezone != "" {
 		l, err := time.LoadLocation(config.Timezone)
 		if err == nil {
 			globalLocation = l
 		} else {
-			log.Println("error loading global location, using default", err)
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Warn("Error loading global location, using default.")
 		}
 	}
 
 	for _, team := range teams {
 		state, ok := mod.teamStates[team.Name]
 		if !ok {
-			log.Println("Initializing team", team.Name)
+			log.WithFields(log.Fields{
+				"team": team.Name,
+			}).Info("Initializing team.")
 		} else {
 			// FIXME: Check if team changed before doing that
-			log.Println("Refreshing team", team.Name)
+			log.WithFields(log.Fields{
+				"team": team.Name,
+			}).Info("Refreshing team.")
 			state.Cron.Stop()
 		}
 		state = initTeamState(team, globalLocation, mod)

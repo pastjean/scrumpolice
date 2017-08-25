@@ -8,6 +8,7 @@ import (
 
 	"github.com/nlopes/slack"
 	"github.com/pastjean/scrumpolice/scrum"
+	log "github.com/sirupsen/logrus"
 )
 
 // HandleMessage handle a received message for scrums and returns if the bot shall continue to process the message or stop
@@ -42,6 +43,7 @@ func (b *Bot) HandleScrumMessage(event *slack.MessageEvent) bool {
 func (b *Bot) restartScrum(event *slack.MessageEvent) bool {
 	user, err := b.slackBotAPI.GetUserInfo(event.User)
 	if err != nil {
+		b.logSlackRelatedError(event, err, "Fail to get user information.")
 		return false
 	}
 
@@ -59,6 +61,7 @@ func (b *Bot) startScrum(event *slack.MessageEvent) bool {
 	// b.scrum.GetTeamForUser(event.User)
 	user, err := b.slackBotAPI.GetUserInfo(event.User)
 	if err != nil {
+		b.logSlackRelatedError(event, err, "Fail to get user information.")
 		b.slackBotAPI.PostMessage(event.Channel, "There was an error starting your scrum, please try again", slack.PostMessageParameters{AsUser: true})
 		return false
 	}
@@ -159,6 +162,10 @@ func (b *Bot) answerQuestions(event *slack.MessageEvent, questionSet *scrum.Ques
 		b.scrum.SaveReport(report, questionSet)
 		b.slackBotAPI.PostMessage(event.Channel, "Thanks for your scrum report my :deer:! :bear: with us for the digest. :owl: see you later!\n If you want to start again just say `restart scrum`", slack.PostMessageParameters{AsUser: true})
 		b.unsetUserContext(event.User)
+		b.logger.WithFields(log.Fields{
+			"user": report.User,
+			"team": report.Team,
+		}).Info("All questions anwsered, entry saved.")
 		return false
 	}
 
