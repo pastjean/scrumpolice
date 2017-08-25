@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -124,6 +125,11 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		return
 	}
 
+	if eventText == "tutorial" {
+		go b.tutorial(event)
+		return
+	}
+
 	if eventText == "out of office" {
 		b.outOfOffice(event, event.User, true)
 		return
@@ -194,6 +200,7 @@ func (b *Bot) help(event *slack.MessageEvent) {
 		MarkdownIn: []string{"text"},
 		Text: "- `source code`: location of my source code\n" +
 			"- `help`: well, this command\n" +
+			"- `tutorial`: explains how the scrum police works. Try it!\n" +
 			"- `start scrum`: starts a scrum for a team and a specific set of questions, defaults to your only team if you got only one, and only questions set if there's only one on the team you chose\n" +
 			"- `restart scrum`: restart your last done scrum, if it wasn't posted\n" +
 			"- `out of office`: mark current user as out of office (until `i'm back` is used)\n" +
@@ -209,6 +216,24 @@ func (b *Bot) help(event *slack.MessageEvent) {
 		b.logSlackRelatedError(event, err, "Fail to post message to slack.")
 		return
 	}
+}
+
+// This method sleeps to give a better feeling to the user. It should be use in a sub-routine.
+func (b *Bot) tutorial(event *slack.MessageEvent) {
+	params := slack.PostMessageParameters{AsUser: true}
+
+	b.slackBotAPI.PostMessage(event.Channel, "*Hi there* :wave: You're new, aren't you? You want to know how I do thing? Here :golang:es!", params)
+	time.Sleep(3500 * time.Millisecond)
+	b.slackBotAPI.PostMessage(event.Channel, "When you want to start a scrum report, just tell me `start scrum` in a direct message :flag-dm:. _If you are part of more than one team, specify the team (I will ask you if you don't)_", params)
+	time.Sleep(6500 * time.Millisecond)
+	b.slackBotAPI.PostMessage(event.Channel, "Then, I will ask you a couple of questions, and wait for your answers. Once you anwsered all the questions, you're done :white_check_mark:.", params)
+	b.slackBotAPI.PostMessage(event.Channel, "I take care of the rest! :cop:", params)
+	time.Sleep(4500 * time.Millisecond)
+	b.slackBotAPI.PostMessage(event.Channel, "When it's time :clock10:, I will post the scrum report for you and your friends in your team's channel :raised_hands:\n", params)
+	time.Sleep(4500 * time.Millisecond)
+	b.slackBotAPI.PostMessage(event.Channel, "All you have to do now is read the report :book: (when you have the time, I don't want to rush you :scream:)", params)
+	time.Sleep(3000 * time.Millisecond)
+	b.slackBotAPI.PostMessage(event.Channel, "That's all. Enjoy :beers:.", params)
 }
 
 func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string, resolveUser bool) {
