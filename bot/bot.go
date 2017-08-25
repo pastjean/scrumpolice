@@ -229,7 +229,7 @@ func (b *Bot) tutorial(event *slack.MessageEvent) {
 	b.slackBotAPI.PostMessage(event.Channel, "Then, I will ask you a couple of questions, and wait for your answers. Once you anwsered all the questions, you're done :white_check_mark:.", params)
 	b.slackBotAPI.PostMessage(event.Channel, "I take care of the rest! :cop:", params)
 	time.Sleep(4500 * time.Millisecond)
-	b.slackBotAPI.PostMessage(event.Channel, "When it's time :clock10:, I will post the scrum report for you and you're friends in your team's channel :raised_hands:\n", params)
+	b.slackBotAPI.PostMessage(event.Channel, "When it's time :clock10:, I will post the scrum report for you and your friends in your team's channel :raised_hands:\n", params)
 	time.Sleep(4500 * time.Millisecond)
 	b.slackBotAPI.PostMessage(event.Channel, "All you have to do now is read the report :book: (when you have the time, I don't want to rush you :scream:)", params)
 	time.Sleep(3000 * time.Millisecond)
