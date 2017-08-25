@@ -27,9 +27,9 @@ Create your configuration file:
       "channel": "themostaswesometeamchannel",
       "name": "L337 team",
       "members": [
-        "@fboutin2",
-        "@lbourdages",
-        "@pastjean"
+        "@gfreeman",
+        "@evance",
+        "@wbreen"
       ],
       "split_report": true,
       "question_sets": [
@@ -50,7 +50,7 @@ Create your configuration file:
 }
 ```
 
-`split_report` whether to post each scrum entry as a separate messages or post all post all scrum entries in the same message.
+`split_report`: whether to post each scrum entry as a separate message or post all scrum entries in the same message.
 
 Run the bot with a slack bot user token
 
