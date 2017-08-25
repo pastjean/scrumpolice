@@ -29,7 +29,11 @@ func (b *Bot) HandleScrumMessage(event *slack.MessageEvent) bool {
 	}
 
 	if strings.HasPrefix(strings.ToLower(event.Text), "start scrum") {
-		return b.startScrum(event)
+		return b.startScrum(event, false)
+	}
+
+	if strings.HasPrefix(strings.ToLower(event.Text), "skip") {
+		return b.startScrum(event, true)
 	}
 
 	if strings.ToLower(event.Text) == "restart scrum" {
@@ -54,7 +58,7 @@ func (b *Bot) restartScrum(event *slack.MessageEvent) bool {
 	return false
 }
 
-func (b *Bot) startScrum(event *slack.MessageEvent) bool {
+func (b *Bot) startScrum(event *slack.MessageEvent, isSkipped bool) bool {
 	// can we infer team (aka does the user only has one team)
 	// b.scrum.GetTeamForUser(event.User)
 	user, err := b.slackBotAPI.GetUserInfo(event.User)
@@ -70,13 +74,13 @@ func (b *Bot) startScrum(event *slack.MessageEvent) bool {
 	}
 
 	if len(teams) == 1 {
-		return b.choosenTeam(event, username, teams[0])
+		return b.choosenTeam(event, username, teams[0], isSkipped)
 	}
 
-	return b.chooseTeam(event, username, teams)
+	return b.chooseTeam(event, username, teams, isSkipped)
 }
 
-func (b *Bot) chooseTeam(event *slack.MessageEvent, username string, teams []string) bool {
+func (b *Bot) chooseTeam(event *slack.MessageEvent, username string, teams []string, isSkipped bool) bool {
 	choices := make([]string, len(teams))
 	sort.Strings(teams)
 	for i, team := range teams {
@@ -91,17 +95,17 @@ func (b *Bot) chooseTeam(event *slack.MessageEvent, username string, teams []str
 
 		if i < 0 || i >= len(teams) || err != nil {
 			b.slackBotAPI.PostMessage(event.Channel, "Wrong choices, please try again :p or type `quit`", slack.PostMessageParameters{AsUser: true})
-			b.chooseTeam(event, username, teams)
+			b.chooseTeam(event, username, teams, isSkipped)
 			return false
 		}
 
-		return b.choosenTeam(event, username, teams[i])
+		return b.choosenTeam(event, username, teams[i], isSkipped)
 	}))
 
 	return false
 }
 
-func (b *Bot) choosenTeam(event *slack.MessageEvent, username string, team string) bool {
+func (b *Bot) choosenTeam(event *slack.MessageEvent, username string, team string, isSkipped bool) bool {
 	qs := b.scrum.GetQuestionSetsForTeam(team)
 
 	if len(qs) == 0 {
@@ -110,14 +114,14 @@ func (b *Bot) choosenTeam(event *slack.MessageEvent, username string, team strin
 	}
 
 	if len(qs) == 1 {
-		return b.choosenTeamAndContext(event, username, team, qs[0])
+		return b.choosenTeamAndContext(event, username, team, qs[0], isSkipped)
 	}
 
-	return b.chooseContext(event, username, team, qs)
+	return b.chooseContext(event, username, team, qs, isSkipped)
 	// get the questionset (if more than one)
 }
 
-func (b *Bot) chooseContext(event *slack.MessageEvent, username string, team string, questionSets []*scrum.QuestionSet) bool {
+func (b *Bot) chooseContext(event *slack.MessageEvent, username string, team string, questionSets []*scrum.QuestionSet, isSkipped bool) bool {
 	choices := make([]string, len(questionSets))
 	for i, questionSet := range questionSets {
 		choices[i] = fmt.Sprintf("%d - %s", i, strings.Join(questionSet.Questions, " & "))
@@ -131,17 +135,31 @@ func (b *Bot) chooseContext(event *slack.MessageEvent, username string, team str
 
 		if i < 0 || i >= len(questionSets) || err != nil {
 			b.slackBotAPI.PostMessage(event.Channel, "Wrong choices, please try again :p or type `quit`", slack.PostMessageParameters{AsUser: true})
-			b.chooseContext(event, username, team, questionSets)
+			b.chooseContext(event, username, team, questionSets, isSkipped)
 			return false
 		}
 
-		return b.choosenTeamAndContext(event, username, team, questionSets[i])
+		return b.choosenTeamAndContext(event, username, team, questionSets[i], isSkipped)
 	}))
 
 	return false
 }
 
-func (b *Bot) choosenTeamAndContext(event *slack.MessageEvent, username string, team string, questionSet *scrum.QuestionSet) bool {
+func (b *Bot) choosenTeamAndContext(event *slack.MessageEvent, username string, team string, questionSet *scrum.QuestionSet, isSkipped bool) bool {
+	if isSkipped {
+		msg := fmt.Sprintf("Scrum report skipped for %s in team %s, type `restart scrum` if it should not be skipped", username, team)
+		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+
+		b.scrum.SaveReport(&scrum.Report{
+			User:    username,
+			Team:    team,
+			Skipped: true,
+			Answers: map[string]string{},
+		}, questionSet)
+		b.unsetUserContext(event.User)
+		return false
+	}
+
 	msg := fmt.Sprintf("Scrum report started %s for team %s, type `quit` anytime to stop", username, team)
 	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
 
