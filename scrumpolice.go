@@ -9,6 +9,7 @@ import (
 	"github.com/nlopes/slack"
 	"github.com/pastjean/scrumpolice/bot"
 	"github.com/pastjean/scrumpolice/scrum"
+	"github.com/sirupsen/logrus"
 )
 
 const header = "                                           _ _\n" +
@@ -36,7 +37,7 @@ func main() {
 	flag.Parse()
 
 	// Injection
-	logger := log.New(os.Stderr, "", log.Lshortfile)
+	logger := logrus.New()
 	configurationProvider := scrum.NewConfigWatcher(configFile)
 	slackAPIClient := slack.New(slackBotToken)
 	scrum := scrum.NewService(configurationProvider, slackAPIClient)
