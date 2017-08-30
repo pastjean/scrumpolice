@@ -70,6 +70,17 @@ func isMemberOutOfOffice(ts *TeamState, member string) bool {
 	return isOutOfOffice
 }
 
+func (ts *TeamState) postMessageToSlack(channel string, message string, params slack.PostMessageParameters) {
+	_, _, err := ts.service.slackBotAPI.PostMessage(channel, message, params)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"team":    ts.Team.Name,
+			"channel": ts.Channel,
+			"error":   err,
+		}).Warn("Error while posting message to slack")
+	}
+}
+
 func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 	qsstate := ts.questionSetStates[qs]
 	if qsstate.sent == true {
@@ -78,7 +89,7 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 	qsstate.sent = true
 
 	if len(qsstate.enteredReports) == 0 {
-		ts.service.slackBotAPI.PostMessage(ts.Channel, "I'd like to take time to :shame: everyone for not reporting", SlackParams)
+		ts.postMessageToSlack(ts.Channel, "I'd like to take time to :shame: everyone for not reporting", SlackParams)
 		return
 	}
 
@@ -124,24 +135,24 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 	}
 
 	if ts.SplitReport {
-		ts.service.slackBotAPI.PostMessage(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", slack.PostMessageParameters{AsUser: true})
+		ts.postMessageToSlack(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", slack.PostMessageParameters{AsUser: true})
 		for i := 0; i < len(attachments); i++ {
 			params := slack.PostMessageParameters{
 				AsUser:      true,
 				Attachments: []slack.Attachment{attachments[i]},
 			}
-			ts.service.slackBotAPI.PostMessage(ts.Channel, "*Scrum by*", params)
+			ts.postMessageToSlack(ts.Channel, "*Scrum by*", params)
 		}
 	} else {
 		params := slack.PostMessageParameters{
 			AsUser:      true,
 			Attachments: attachments,
 		}
-		ts.service.slackBotAPI.PostMessage(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", params)
+		ts.postMessageToSlack(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", params)
 	}
 
 	if len(didNotDoReport) > 0 {
-		ts.service.slackBotAPI.PostMessage(ts.Channel, fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), SlackParams)
+		ts.postMessageToSlack(ts.Channel, fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), SlackParams)
 	}
 
 	log.WithFields(log.Fields{
@@ -191,7 +202,7 @@ func (ts *TeamState) sendLastReminder(qs *QuestionSet) {
 	}
 
 	memberThatDidNotDoReport := strings.Join(didNotDoReport, ", ")
-	ts.service.slackBotAPI.PostMessage(ts.Channel, fmt.Sprintf("Last chance to fill report! :shame: to: %s", memberThatDidNotDoReport), SlackParams)
+	ts.postMessageToSlack(ts.Channel, fmt.Sprintf("Last chance to fill report! :shame: to: %s", memberThatDidNotDoReport), SlackParams)
 }
 
 type ScrumReportJob struct {
