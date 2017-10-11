@@ -173,8 +173,22 @@ func (ts *TeamState) sendFirstReminder(qs *QuestionSet) {
 		if !isMemberOutOfOffice(ts, member) {
 			_, ok := qsstate.enteredReports[member]
 			if !ok {
-				ts.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report! `start scrum` to do it or `skip` if you have nothing to say", SlackParams)
+				_, _, err := ts.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report! `start scrum` to do it or `skip` if you have nothing to say", SlackParams)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"team":    ts.Team.Name,
+						"member":  member,
+						"channel": ts.Channel,
+						"error":   err,
+					}).Warn("Could not send first reminder.")
+				}
 			}
+		} else {
+			log.WithFields(log.Fields{
+				"team":    ts.Team.Name,
+				"member":  member,
+				"channel": ts.Channel,
+			}).Info("Member out of office, not sending reminder.")
 		}
 	}
 }
