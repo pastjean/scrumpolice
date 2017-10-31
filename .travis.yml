@@ -6,8 +6,9 @@ services:
   - docker
 
 scripts: 
+  - go get -t -v ./...
   - go test -v ./...
-  - ./build.sh
+  - sh build.sh
 
 after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
