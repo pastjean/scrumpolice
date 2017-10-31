@@ -5,10 +5,10 @@ language: go
 services:
   - docker
 
-scripts: 
+script: 
   - go get -t -v ./...
   - go test -v ./...
-  - sh build.sh
+  - sh ./build.sh
 
 after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
