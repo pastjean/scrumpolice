@@ -1,2 +1,17 @@
+sudo: required
+
 language: go
 
+services:
+  - docker
+
+scripts: 
+  - go test -v ./...
+  - ./build.sh
+
+after_success:
+  - if [ "$TRAVIS_BRANCH" == "master" ]; then
+    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
+    docker build -t pastjean/scrumpolice:latest .
+    docker push pastjean/scrumpolice:latest;
+    fi
