@@ -75,7 +75,7 @@ func (ts *TeamState) postMessageToSlack(channel string, message string, params s
 	if err != nil {
 		log.WithFields(log.Fields{
 			"team":    ts.Team.Name,
-			"channel": ts.Channel,
+			"channel": channel,
 			"error":   err,
 		}).Warn("Error while posting message to slack")
 	}

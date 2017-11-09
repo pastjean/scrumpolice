@@ -105,10 +105,6 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		eventText = b.trimBotNameInMessage(eventText)
 	}
 
-	if isIM {
-		// HANDLE PRIVATE TALK IN HERE
-	}
-
 	// From here on i only care of messages that were clearly adressed to me so i'll just get out
 	if !adressedToMe && !isIM {
 		return
