@@ -12,9 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var (
-	SlackParams = slack.PostMessageParameters{AsUser: true}
-)
+var SlackParams = slack.PostMessageParameters{AsUser: true}
 
 type Service interface {
 	DeleteLastReport(username string) bool
