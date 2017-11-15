@@ -89,7 +89,7 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 	}
 
 	// HANDLE GLOBAL PUBLIC COMMANDS HERE
-	if strings.Contains(eventText, "wave") {
+	if strings.Contains(eventText, ":wave:") {
 		b.reactToEvent(event, "wave")
 		b.reactToEvent(event, "oncoming_police_car")
 		return
