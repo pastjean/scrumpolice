@@ -38,9 +38,10 @@ func main() {
 
 	// Injection
 	logger := logrus.New()
-	configurationProvider := scrum.NewConfigWatcher(configFile)
+	// TODO copy config before if necessary
+	configStorage := scrum.NewFileConfigurationStorage(&configFile)
 	slackAPIClient := slack.New(slackBotToken)
-	scrum := scrum.NewService(configurationProvider, slackAPIClient)
+	scrum := scrum.NewService(configStorage, slackAPIClient)
 
 	// Create and run bot
 	b := bot.New(slackAPIClient, logger, scrum)

@@ -25,10 +25,11 @@ type Service interface {
 }
 
 type service struct {
-	configurationProvider ConfigurationProvider
-	teamStates            map[string]*TeamState
-	slackBotAPI           *slack.Client
-	lastEnteredReport     map[string]*Report
+	configurationStorage ConfigurationStorage
+	timezone             string
+	teamStates           map[string]*TeamState
+	slackBotAPI          *slack.Client
+	lastEnteredReport    map[string]*Report
 }
 
 type TeamState struct {
@@ -253,21 +254,19 @@ func (job *ScrumReminderJob) Run() {
 	}
 }
 
-func NewService(configurationProvider ConfigurationProvider, slackBotAPI *slack.Client) Service {
+func NewService(configurationStorage ConfigurationStorage, slackBotAPI *slack.Client) Service {
 	mod := &service{
-		configurationProvider: configurationProvider,
-		slackBotAPI:           slackBotAPI,
-		teamStates:            map[string]*TeamState{},
-		lastEnteredReport:     map[string]*Report{},
+		configurationStorage: configurationStorage,
+		slackBotAPI:          slackBotAPI,
+		teamStates:           map[string]*TeamState{},
+		lastEnteredReport:    map[string]*Report{},
 	}
 
 	// initial *refresh
-	mod.refresh(configurationProvider.Config())
+	mod.refresh(configurationStorage.load())
 
-	configurationProvider.OnChange(func(cfg *Config) {
-		log.Println("Configuration File Changed refreshing state")
-		mod.refresh(cfg)
-	})
+	var fileName = "test.json"
+	NewFileConfigurationStorage(&fileName).save(mod.getCurrentConfig())
 
 	return mod
 }
@@ -279,15 +278,16 @@ func (mod *service) refresh(config *Config) {
 
 	globalLocation := time.Local
 	if config.Timezone != "" {
-		l, err := time.LoadLocation(config.Timezone)
+		location, err := time.LoadLocation(config.Timezone)
 		if err == nil {
-			globalLocation = l
+			globalLocation = location
 		} else {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Warn("Error loading global location, using default.")
 		}
 	}
+	mod.timezone = globalLocation.String()
 
 	for _, team := range teams {
 		state, ok := mod.teamStates[team.Name]
@@ -304,6 +304,19 @@ func (mod *service) refresh(config *Config) {
 		}
 		state = initTeamState(team, globalLocation, mod)
 		mod.teamStates[team.Name] = state
+	}
+}
+
+func (mod *service) getCurrentConfig() *Config {
+	var teamConfigs []TeamConfig
+
+	for _, teamState := range mod.teamStates {
+		teamConfigs = append(teamConfigs, *teamState.Team.toTeamConfig())
+	}
+
+	return &Config{
+		Timezone: mod.timezone,
+		Teams:    teamConfigs,
 	}
 }
 
