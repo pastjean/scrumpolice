@@ -32,25 +32,23 @@ func main() {
 		log.Fatalln("slack bot token must be set in SCRUMPOLICE_SLACK_TOKEN")
 	}
 
-
 	logger := logrus.New()
 
-	permanentConfigFile := "db.json"
-	flag.StringVar(&permanentConfigFile, "databaseFile", permanentConfigFile, "The permanent database file")
-	flag.Parse()
-	configFile := "config.json"
-	flag.StringVar(&configFile, "config", configFile, "The configuration file")
+	var databaseFile string
+	var configFile string
+	flag.StringVar(&databaseFile, "databaseFile", "db.json", "The permanent database file")
+	flag.StringVar(&configFile, "config", "config.json", "The configuration file")
 	flag.Parse()
 
 	slackAPIClient := slack.New(slackBotToken)
-	scrumService := scrum.NewService(initConfig(configFile, permanentConfigFile), slackAPIClient)
+	scrumService := scrum.NewService(initConfig(configFile, databaseFile), slackAPIClient)
 
 	// Create and run bot
 	b := bot.New(slackAPIClient, logger, scrumService)
 	b.Run()
 }
 
-func initConfig(configFileName string, permanentDbFileName string) scrum.ConfigurationStorage  {
+func initConfig(configFileName string, permanentDbFileName string) scrum.ConfigurationStorage {
 	var configStorage = scrum.NewFileConfigurationStorage(&permanentDbFileName)
 
 	if _, err := os.Stat(permanentDbFileName); os.IsNotExist(err) {
@@ -58,7 +56,7 @@ func initConfig(configFileName string, permanentDbFileName string) scrum.Configu
 		configStorage.Save(scrum.NewFileConfigurationStorage(&configFileName).Load())
 	}
 	if configStorage.Load() == nil {
-		log.Fatal("Could not load proper configuration. Will not boot.")
+		log.Fatalln("Could not load proper configuration. Will not boot.")
 	}
 	return configStorage
 }

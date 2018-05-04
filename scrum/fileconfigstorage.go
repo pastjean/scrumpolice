@@ -4,6 +4,8 @@ import (
 	"os"
 	"log"
 	"encoding/json"
+	"bytes"
+	"io"
 )
 
 type FileConfigurationStorage struct {
@@ -27,16 +29,20 @@ func (configStorage *FileConfigurationStorage) Load() *Config {
 	}
 
 func (configStorage *FileConfigurationStorage) Save(config *Config) {
-	file, err := os.OpenFile(*configStorage.fileName, os.O_RDWR|os.O_CREATE, 0666)
+	buffer := new(bytes.Buffer)
+	err := json.NewEncoder(buffer).Encode(config)
+	if err != nil {
+		log.Println("Cannot serialize configuration state. content:", err)
+		return
+	}
+
+	file, err := os.OpenFile(*configStorage.fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		log.Println("Cannot open file '", *configStorage.fileName, "', error:", err)
 		return
 	}
 
-	err = json.NewEncoder(file).Encode(&config)
-	if err != nil {
-		log.Println("Cannot serialize configuration file ('", *configStorage.fileName, "') content:", err)
-	}
+	io.Writer(file).Write(buffer.Bytes())
 }
 
 func NewFileConfigurationStorage(fileName *string) ConfigurationStorage {
