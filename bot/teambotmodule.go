@@ -8,6 +8,9 @@ import (
 
 	"github.com/nlopes/slack"
 	log "github.com/sirupsen/logrus"
+	"github.com/pastjean/scrumpolice/scrum"
+	"time"
+	"github.com/robfig/cron"
 )
 
 // HandleMessage handle a received message for team and returns if the bot shall continue to process the message or stop
@@ -26,6 +29,10 @@ func (b *Bot) HandleTeamEditionMessage(event *slack.MessageEvent) bool {
 		return b.startTeamEdition(event)
 	}
 
+	if strings.HasPrefix(strings.ToLower(event.Text), "create team") {
+		return b.startTeamCreation(event)
+	}
+
 	return true
 }
 
@@ -37,6 +44,65 @@ func (b *Bot) cancelTeamEdition(event *slack.MessageEvent) bool {
 	}
 
 	b.slackBotAPI.PostMessage(event.Channel, "Team edition was cancelled. Better luck next time!", slack.PostMessageParameters{AsUser: true})
+	return false
+}
+
+func (b *Bot) startTeamCreation(event *slack.MessageEvent) bool {
+	_, err := b.slackBotAPI.GetUserInfo(event.User)
+	if err != nil {
+		b.logSlackRelatedError(event, err, "Fail to get user information.")
+		b.slackBotAPI.PostMessage(event.Channel, "There was an error editing the team, please try again", slack.PostMessageParameters{AsUser: true})
+		return false
+	}
+
+	return b.chooseTeamName(event)
+}
+
+func (b *Bot) chooseTeamName(event *slack.MessageEvent) bool {
+	msg := "What should be the team name?"
+	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+
+	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
+		teams := b.scrum.GetTeams()
+		newTeamName := event.Text
+
+		for _, team := range teams {
+			if team == newTeamName {
+				b.slackBotAPI.PostMessage(event.Channel, "Team already exists, choose a new name or type `quit`", slack.PostMessageParameters{AsUser: true})
+				b.chooseTeamName(event)
+			}
+		}
+
+		author, err := b.slackBotAPI.GetUserInfo(event.User)
+		if err != nil {
+			b.logSlackRelatedError(event, err, "Fail to get user information.")
+			return false
+		}
+
+		members := []string{author.Name}
+		var firstReminderBefore time.Duration = -8 * time.Second
+		var lastReminderBefore time.Duration = -8 * time.Second
+		schedule, _ := cron.Parse("@every 30s")
+
+		questions := []*scrum.QuestionSet{&scrum.QuestionSet{
+			Questions: []string{"What did you do yesterday?", "What will you do today?", "Are you being blocked by someone for a review? who? why?"},
+			FirstReminderBeforeReport: firstReminderBefore,
+			LastReminderBeforeReport: lastReminderBefore,
+			ReportScheduleCron: "@every 30s",
+			ReportSchedule: schedule,
+		}}
+
+		b.scrum.AddTeam(&scrum.Team{
+			Name: newTeamName,
+			Channel: "@"+author.Name,
+			Members: members,
+			SplitReport: true,
+			OutOfOffice: []string{},
+			QuestionsSets: questions,
+		})
+
+		return b.choosenTeamToEdit(event, newTeamName)
+	}))
 	return false
 }
 

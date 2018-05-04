@@ -23,6 +23,8 @@ type Service interface {
 	SaveReport(report *Report, qs *QuestionSet)
 	AddToOutOfOffice(team string, username string)
 	RemoveFromOutOfOffice(team string, username string)
+	AddTeam(team *Team)
+	DeleteTeam(team string)
 	AddToTeam(team string, username string)
 	RemoveFromTeam(team string, username string)
 }
@@ -476,6 +478,26 @@ func (m *service) RemoveFromTeam(team string, username string) {
 		}
 	}
 	m.teamStates[team].Members = members
+
+	m.saveConfig()
+}
+
+func (m *service) AddTeam(team *Team) {
+	location, _ := time.LoadLocation(m.getCurrentConfig().Timezone)
+	state := initTeamState(team, location, m)
+	m.teamStates[team.Name] = state
+
+	m.saveConfig()
+}
+
+func (m *service) DeleteTeam(team string) {
+	var teams map[string]*TeamState
+	for _, t := range m.teamStates {
+		if t.Name != team {
+			teams[t.Name] = t
+		}
+	}
+	m.teamStates = teams
 
 	m.saveConfig()
 }
