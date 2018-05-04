@@ -180,7 +180,7 @@ func (b *Bot) chooseTeamToEdit(event *slack.MessageEvent, cb ChosenTeamFunc) boo
 
 	teams := b.scrum.GetTeamsForUser(user.Name)
 	if len(teams) == 0 {
-		b.slackBotAPI.PostMessage(event.Channel, "There is no teams, use 'create team' to create a new team", slack.PostMessageParameters{AsUser: true})
+		b.slackBotAPI.PostMessage(event.Channel, "There is no teams, use 'add team' to create a new team", slack.PostMessageParameters{AsUser: true})
 		return false
 	}
 
