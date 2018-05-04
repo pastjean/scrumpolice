@@ -20,6 +20,7 @@ type Service interface {
 	GetTeamByName(teamName string) (*TeamState, error)
 	GetTeamsForUser(username string) []string
 	GetQuestionSetsForTeam(team string) []*QuestionSet
+	GetUsersForTeam(team string) []string
 	SaveReport(report *Report, qs *QuestionSet)
 	AddToOutOfOffice(team string, username string)
 	RemoveFromOutOfOffice(team string, username string)
@@ -409,6 +410,10 @@ func (m *service) GetTeamByName(teamName string) (*TeamState, error) {
 
 func (m *service) GetQuestionSetsForTeam(team string) []*QuestionSet {
 	return m.teamStates[team].QuestionsSets
+}
+
+func (m *service) GetUsersForTeam(team string) []string {
+	return m.teamStates[team].Members
 }
 
 func (m *service) SaveReport(report *Report, qs *QuestionSet) {

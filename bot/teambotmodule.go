@@ -267,6 +267,16 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 
 func (b *Bot) ChangeUserAction(event *slack.MessageEvent, team string, action string, username string) bool {
 	if action == "add" {
+		users := b.scrum.GetUsersForTeam(team)
+		for _, user := range users {
+			if user == username {
+				b.slackBotAPI.PostMessage(event.Channel, "@"+username+" is already in the team "+team+". Do you need :eyeglasses:?", slack.PostMessageParameters{AsUser: true})
+				b.choosenTeamToEdit(event, team)
+
+				return false
+			}
+		}
+
 		b.scrum.AddToTeam(team, username)
 
 		b.slackBotAPI.PostMessage(event.Channel, "I've added @"+username+" to team "+team, slack.PostMessageParameters{AsUser: true})
@@ -284,6 +294,19 @@ func (b *Bot) ChangeUserAction(event *slack.MessageEvent, team string, action st
 			"doneBy": author.Name,
 		}).Info("User was added to team.")
 	} else if action == "remove" {
+		users := b.scrum.GetUsersForTeam(team)
+		isInTeam := false
+		for _, user := range users {
+			isInTeam = isInTeam || user == username
+		}
+
+		if !isInTeam {
+			b.slackBotAPI.PostMessage(event.Channel, "@"+username+" is not in the team "+team+". I'm no magician!", slack.PostMessageParameters{AsUser: true})
+			b.choosenTeamToEdit(event, team)
+
+			return false
+		}
+
 		b.scrum.RemoveFromTeam(team, username)
 
 		b.slackBotAPI.PostMessage(event.Channel, "I've removed @"+username+" to team "+team, slack.PostMessageParameters{AsUser: true})

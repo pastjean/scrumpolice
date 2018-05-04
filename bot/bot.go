@@ -205,7 +205,9 @@ func (b *Bot) help(event *slack.MessageEvent) {
 			"- `out of office`: mark current user as out of office (until `i'm back` is used)\n" +
 			"- `[user] is out of office`: mark the specified user as out of office (until he or she uses `i'm back`)\n" +
 			"- `i am back` or `i'm back`: mark current user as in office. MacOS smart quote can screw up with the `i'm back` command\n" +
-			"-  edit team`: make changes to a team you are part of.",
+			"- `add team`: create a new team with a basic configuration.\n" +
+			"- `remove team`: Delete the configuration of one of your teams. The team won't receive any more notifications :disappointed:\n" +
+			"- `edit team`: make changes to a team you are part of.",
 	}
 
 	params := slack.PostMessageParameters{AsUser: true}
