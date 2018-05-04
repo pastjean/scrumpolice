@@ -491,13 +491,7 @@ func (m *service) AddTeam(team *Team) {
 }
 
 func (m *service) DeleteTeam(team string) {
-	var teams map[string]*TeamState
-	for _, t := range m.teamStates {
-		if t.Name != team {
-			teams[t.Name] = t
-		}
-	}
-	m.teamStates = teams
+	delete(m.teamStates, team)
 
 	m.saveConfig()
 }

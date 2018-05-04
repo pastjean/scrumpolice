@@ -29,8 +29,12 @@ func (b *Bot) HandleTeamEditionMessage(event *slack.MessageEvent) bool {
 		return b.startTeamEdition(event)
 	}
 
-	if strings.HasPrefix(strings.ToLower(event.Text), "create team") {
+	if strings.HasPrefix(strings.ToLower(event.Text), "add team") {
 		return b.startTeamCreation(event)
+	}
+
+	if strings.HasPrefix(strings.ToLower(event.Text), "remove team") {
+		return b.startTeamDeletion(event)
 	}
 
 	return true
@@ -46,6 +50,51 @@ func (b *Bot) cancelTeamEdition(event *slack.MessageEvent) bool {
 	b.slackBotAPI.PostMessage(event.Channel, "Team edition was cancelled. Better luck next time!", slack.PostMessageParameters{AsUser: true})
 	return false
 }
+
+func (b *Bot) startTeamDeletion(event *slack.MessageEvent) bool {
+	_, err := b.slackBotAPI.GetUserInfo(event.User)
+	if err != nil {
+		b.logSlackRelatedError(event, err, "Fail to get user information.")
+		b.slackBotAPI.PostMessage(event.Channel, "There was an error editing the team, please try again", slack.PostMessageParameters{AsUser: true})
+		return false
+	}
+
+	return b.chooseTeamToEdit(event, func (event *slack.MessageEvent, team string) bool {
+		return b.chosenTeamToDelete(event, team)
+	})
+}
+
+func (b *Bot) chosenTeamToDelete(event *slack.MessageEvent, team string) bool {
+	expected := "remove team "+team
+	msg := "Type `"+expected+"` to delete the team or type `quit`"
+	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+
+	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
+		if event.Text == expected {
+			author, err := b.slackBotAPI.GetUserInfo(event.User)
+			if err != nil {
+				b.logSlackRelatedError(event, err, "Fail to get user information.")
+				return false
+			}
+
+			b.scrum.DeleteTeam(team)
+
+			b.slackBotAPI.PostMessage(event.Channel, "I've deleted the team "+team, slack.PostMessageParameters{AsUser: true})
+			log.WithFields(log.Fields{
+				"team":   team,
+				"doneBy": author.Name,
+			}).Info("Team was deleted.")
+
+			b.unsetUserContext(event.User)
+			return false
+		}
+
+		return b.chosenTeamToDelete(event, team)
+	}))
+
+	return false
+}
+
 
 func (b *Bot) startTeamCreation(event *slack.MessageEvent) bool {
 	_, err := b.slackBotAPI.GetUserInfo(event.User)
@@ -70,6 +119,7 @@ func (b *Bot) chooseTeamName(event *slack.MessageEvent) bool {
 			if team == newTeamName {
 				b.slackBotAPI.PostMessage(event.Channel, "Team already exists, choose a new name or type `quit`", slack.PostMessageParameters{AsUser: true})
 				b.chooseTeamName(event)
+				return false
 			}
 		}
 
@@ -114,15 +164,26 @@ func (b *Bot) startTeamEdition(event *slack.MessageEvent) bool {
 		return false
 	}
 
-	teams := b.scrum.GetTeams()
-	if len(teams) == 0 {
-		b.slackBotAPI.PostMessage(event.Channel, "There is no teams, use 'create team' to create a new team", slack.PostMessageParameters{AsUser: true})
-	}
-
-	return b.chooseTeamToEdit(event, teams)
+	return b.chooseTeamToEdit(event, func (event *slack.MessageEvent, team string) bool {
+		return b.choosenTeamToEdit(event, team)
+	})
 }
 
-func (b *Bot) chooseTeamToEdit(event *slack.MessageEvent, teams []string) bool {
+type ChosenTeamFunc func(event *slack.MessageEvent, team string) bool
+
+func (b *Bot) chooseTeamToEdit(event *slack.MessageEvent, cb ChosenTeamFunc) bool {
+	user, err := b.slackBotAPI.GetUserInfo(event.User)
+	if err != nil {
+		b.logSlackRelatedError(event, err, "Fail to get user information.")
+		return false
+	}
+
+	teams := b.scrum.GetTeamsForUser(user.Name)
+	if len(teams) == 0 {
+		b.slackBotAPI.PostMessage(event.Channel, "There is no teams, use 'create team' to create a new team", slack.PostMessageParameters{AsUser: true})
+		return false
+	}
+
 	choices := make([]string, len(teams))
 	sort.Strings(teams)
 	for i, team := range teams {
@@ -137,11 +198,11 @@ func (b *Bot) chooseTeamToEdit(event *slack.MessageEvent, teams []string) bool {
 
 		if i < 0 || i >= len(teams) || err != nil {
 			b.slackBotAPI.PostMessage(event.Channel, "Wrong choices, please try again :p or type `quit`", slack.PostMessageParameters{AsUser: true})
-			b.chooseTeamToEdit(event, teams)
+			b.chooseTeamToEdit(event, cb)
 			return false
 		}
 
-		return b.choosenTeamToEdit(event, teams[i])
+		return cb(event, teams[i])
 	}))
 
 	return false
