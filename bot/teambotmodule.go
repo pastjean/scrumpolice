@@ -213,7 +213,11 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 		MarkdownIn: []string{"text"},
 		Text: "" +
 			"- `add @name`: Add *@name* to team\n" +
-			"- `remove @name`: Remove *@name* from team",
+			"- `remove @name`: Remove *@name* from team\n" +
+			"- `edit schedule`: Edit the schedule of the scrum\n" +
+			"- `edit first reminder`: Edit the length of time before scrum to at which the users should be warned the first time\n" +
+			"- `edit second reminder`: Edit the length of time before scrum to at which the users should be warned the second time\n" +
+			"- `edit questions: Edit the questions asked during scrum`",
 	}
 
 	params := slack.PostMessageParameters{AsUser: true}
@@ -226,33 +230,42 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 	}
 
 	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
-		params := getParams(`(?i)(?P<action>add|remove) <@(?P<user>.+)>\s*`, event.Text)
+		params := getParams(`(?i)(?P<action>add|remove|edit) <(?P<entity>.+)>\s*`, event.Text)
 		fmt.Println(params)
 
-		if len(params) == 0 || params["action"] == "" || params["user"] == "" {
+		if len(params) == 0 || params["action"] == "" || params["entity"] == "" {
 			b.slackBotAPI.PostMessage(event.Channel, "Wrong choices, please try again :p or type `quit`", slack.PostMessageParameters{AsUser: true})
 			b.choosenTeamToEdit(event, team)
 			return false
 		}
-		userId := params["user"]
-		b.logSlackRelatedError(event, err, "Fail to get user information. user:"+userId)
+		action := params["action"]
+		entity := params["entity"]
 
-		user, err := b.slackBotAPI.GetUserInfo(userId)
-		if err != nil {
-			b.logSlackRelatedError(event, err, "Fail to get user information.")
-			b.slackBotAPI.PostMessage(event.Channel, "Hmmmm, I couldn't find the user. Try again!", slack.PostMessageParameters{AsUser: true})
-			b.choosenTeamToEdit(event, team)
-			return false
+		// Handle user stuff
+		if strings.HasPrefix(entity, "@") && (action == "add" || action == "remove"){
+			user, err := b.slackBotAPI.GetUserInfo(strings.Replace(entity, "@", "", -1))
+			if err != nil {
+				b.logSlackRelatedError(event, err, "Fail to get user information.")
+				b.slackBotAPI.PostMessage(event.Channel, "Hmmmm, I couldn't find the user. Try again!", slack.PostMessageParameters{AsUser: true})
+				b.choosenTeamToEdit(event, team)
+				return false
+			}
+			username := user.Name
+
+			return b.ChangeUserAction(event, team, params["action"], username)
+		}else if action == "edit" && entity == "schedule"{
+
 		}
-		username := user.Name
 
-		return b.chooseTeamAction(event, team, params["action"], username)
+		b.slackBotAPI.PostMessage(event.Channel, "Wrong choices, please try again :p or type `quit`", slack.PostMessageParameters{AsUser: true})
+		b.choosenTeamToEdit(event, team)
+		return false
 	}))
 
 	return false
 }
 
-func (b *Bot) chooseTeamAction(event *slack.MessageEvent, team string, action string, username string) bool {
+func (b *Bot) ChangeUserAction(event *slack.MessageEvent, team string, action string, username string) bool {
 	if action == "add" {
 		b.scrum.AddToTeam(team, username)
 
@@ -290,5 +303,10 @@ func (b *Bot) chooseTeamAction(event *slack.MessageEvent, team string, action st
 	}
 
 	b.unsetUserContext(event.User)
+	return false
+}
+
+func (b *Bot) changeScrumSchedule(event *slack.MessageEvent, team string) bool {
+
 	return false
 }
