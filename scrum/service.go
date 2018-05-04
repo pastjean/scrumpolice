@@ -29,6 +29,8 @@ type Service interface {
 	AddToTeam(team string, username string)
 	RemoveFromTeam(team string, username string)
 	ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule, scheduleAsString string)
+	ReplaceFirstReminderInTeam(team string, duration time.Duration)
+	ReplaceSecondReminderInTeam(team string, duration time.Duration)
 	ChangeTeamChannel(team string, channel string)
 }
 
@@ -509,6 +511,24 @@ func (m *service) DeleteTeam(team string) {
 func (m *service) ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule, scheduleAsString string)  {
 	m.teamStates[team].Team.QuestionsSets[0].ReportSchedule = schedule
 	m.teamStates[team].Team.QuestionsSets[0].ReportScheduleCron = scheduleAsString
+
+	m.teamStates[team].Cron.Stop()
+	initTeamstate(m.teamStates[team].Team, m.teamStates[team])
+
+	m.saveConfig()
+}
+
+func (m *service) ReplaceFirstReminderInTeam(team string, duration time.Duration)  {
+	m.teamStates[team].Team.QuestionsSets[0].FirstReminderBeforeReport = duration
+
+	m.teamStates[team].Cron.Stop()
+	initTeamstate(m.teamStates[team].Team, m.teamStates[team])
+
+	m.saveConfig()
+}
+
+func (m *service) ReplaceSecondReminderInTeam(team string, duration time.Duration)  {
+	m.teamStates[team].Team.QuestionsSets[0].LastReminderBeforeReport = duration
 
 	m.teamStates[team].Cron.Stop()
 	initTeamstate(m.teamStates[team].Team, m.teamStates[team])

@@ -221,7 +221,7 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 			"- `edit channel`: Edit the channel in which the scrum is posted\n" +
 			"- `edit schedule`: Edit the schedule of the scrum\n" +
 			"- `edit first reminder`: Edit the length of time before scrum to at which the users should be warned the first time\n" +
-			"- `edit second reminder`: Edit the length of time before scrum to at which the users should be warned the second time\n" +
+			"- `edit last reminder`: Edit the length of time before scrum to at which the users should be warned the second time\n" +
 			"- `edit questions: Edit the questions asked during scrum`",
 	}
 
@@ -263,6 +263,10 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 			
 		} else if action == "edit" && entity == "channel" {
 			return b.changeTeamChannel(event, team)
+		} else if action == "edit" && entity == "first reminder" {
+			return b.changeFirstReminder(event, team)
+		} else if action == "edit" && entity == "last reminder" {
+			return b.changeSecondReminder(event, team)
 		}
 
 		b.slackBotAPI.PostMessage(event.Channel, "Wrong choices, please try again :p or type `quit`", slack.PostMessageParameters{AsUser: true})
@@ -417,6 +421,76 @@ func (b *Bot) changeScrumSchedule(event *slack.MessageEvent, team string) bool {
 
 		b.scrum.ReplaceScrumScheduleInTeam(team, schedule, scheduleString)
 		msg = "Schedule successfully changed!"
+		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+		b.unsetUserContext(event.User)
+		return false
+	}))
+	return false
+}
+
+func (b *Bot) changeFirstReminder(event *slack.MessageEvent, team string) bool {
+	if b.doesTeamHaveMultipleScrums(event, team) {
+		msg := "Team `"+ team +"` has multiple scrums. Edition is currently not supported."
+		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+	}
+
+	msg := ":warning: *Modifying a scrum reminder while a scrum is in progress will reset all entered scrum reports!* :warning:\n"+
+		"Please enter a duration expression for the schedule.\n"+
+		"The format is `-XhYmZs` (for example, `-1m30s`)\n" +
+		"See https://golang.org/pkg/time/#ParseDuration for more information!"
+	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+
+	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
+		durationString := event.Text
+		fmt.Println(durationString)
+
+		if !strings.HasPrefix(durationString, "-"){
+			durationString = "-"+durationString
+		}
+		duration, err := time.ParseDuration(durationString)
+		if err != nil {
+			b.logSlackRelatedError(event, err, "Sorry, I do not understand the duration format you sent me. Please try again, or type `quit`")
+			b.changeFirstReminder(event, team)
+			return false
+		}
+
+		b.scrum.ReplaceFirstReminderInTeam(team, duration)
+		msg = "First reminder duration successfully changed! The users will be warned " + strings.Replace(duration.String(), "-", "", -1) + " before the scrum."
+		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+		b.unsetUserContext(event.User)
+		return false
+	}))
+	return false
+}
+
+func (b *Bot) changeSecondReminder(event *slack.MessageEvent, team string) bool {
+	if b.doesTeamHaveMultipleScrums(event, team) {
+		msg := "Team `"+ team +"` has multiple scrums. Edition is currently not supported."
+		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+	}
+
+	msg := ":warning: *Modifying a scrum reminder while a scrum is in progress will reset all entered scrum reports!* :warning:\n"+
+		"Please enter a duration expression for the schedule.\n"+
+		"The format is `-XhYmZs` (for example, `-1m30s`)\n" +
+		"See https://golang.org/pkg/time/#ParseDuration for more information!"
+	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+
+	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
+		durationString := event.Text
+		fmt.Println(durationString)
+
+		if !strings.HasPrefix(durationString, "-"){
+			durationString = "-"+durationString
+		}
+		duration, err := time.ParseDuration(durationString)
+		if err != nil {
+			b.logSlackRelatedError(event, err, "Sorry, I do not understand the duration format you sent me. Please try again, or type `quit`")
+			b.changeSecondReminder(event, team)
+			return false
+		}
+
+		b.scrum.ReplaceFirstReminderInTeam(team, duration)
+		msg = "Last reminder duration successfully changed! The users will be warned " + strings.Replace(duration.String(), "-", "", -1) + " before the scrum."
 		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
 		b.unsetUserContext(event.User)
 		return false
