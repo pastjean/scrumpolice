@@ -16,12 +16,15 @@ var SlackParams = slack.PostMessageParameters{AsUser: true}
 
 type Service interface {
 	DeleteLastReport(username string) bool
+	GetTeams() []string
 	GetTeamByName(teamName string) (*TeamState, error)
 	GetTeamsForUser(username string) []string
 	GetQuestionSetsForTeam(team string) []*QuestionSet
 	SaveReport(report *Report, qs *QuestionSet)
 	AddToOutOfOffice(team string, username string)
 	RemoveFromOutOfOffice(team string, username string)
+	AddToTeam(team string, username string)
+	RemoveFromTeam(team string, username string)
 }
 
 type service struct {
@@ -371,6 +374,15 @@ func (s *scheduleDependentSchedule) Next(t time.Time) time.Time {
 	return s.depNext.Add(s.Duration)
 }
 
+func (m *service) GetTeams() []string {
+	teams := []string{}
+	for _, ts := range m.teamStates {
+		teams = append(teams, ts.Name)
+	}
+
+	return teams
+}
+
 func (m *service) GetTeamsForUser(username string) []string {
 	teams := []string{}
 	for _, ts := range m.teamStates {
@@ -433,6 +445,8 @@ func (m *service) DeleteLastReport(user string) bool {
 
 func (m *service) AddToOutOfOffice(team string, username string) {
 	m.teamStates[team].OutOfOffice = append(m.teamStates[team].OutOfOffice, username)
+
+	m.saveConfig()
 }
 
 func (m *service) RemoveFromOutOfOffice(team string, username string) {
@@ -443,4 +457,25 @@ func (m *service) RemoveFromOutOfOffice(team string, username string) {
 		}
 	}
 	m.teamStates[team].OutOfOffice = ooof
+
+	m.saveConfig()
+}
+
+
+func (m *service) AddToTeam(team string, username string) {
+	m.teamStates[team].Members = append(m.teamStates[team].Members, username)
+
+	m.saveConfig()
+}
+
+func (m *service) RemoveFromTeam(team string, username string) {
+	var members []string
+	for _, member := range m.teamStates[team].Members {
+		if member != username {
+			members = append(members, member)
+		}
+	}
+	m.teamStates[team].Members = members
+
+	m.saveConfig()
 }

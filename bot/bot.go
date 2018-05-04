@@ -88,10 +88,13 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		return
 	}
 
+	if !b.HandleTeamEditionMessage(event) {
+		return
+	}
+
 	// HANDLE GLOBAL PUBLIC COMMANDS HERE
 	if strings.Contains(eventText, ":wave:") {
 		b.reactToEvent(event, "wave")
-		b.reactToEvent(event, "oncoming_police_car")
 		return
 	}
 
@@ -136,7 +139,7 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		return
 	}
 
-	if eventText == "i'm back" || eventText == "i am back" {
+	if eventText == "i'm back" || eventText == "i am back" || eventText == "i’m back" {
 		b.backInOffice(event)
 		return
 	}
