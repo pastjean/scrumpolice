@@ -36,10 +36,6 @@ import (
 //   ]
 // }
 type (
-	ConfigurationProvider interface {
-		Config() *Config
-		OnChange(handler func(cfg *Config))
-	}
 
 	// Config is the configuration format
 	Config struct {

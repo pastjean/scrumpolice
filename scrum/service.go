@@ -263,10 +263,7 @@ func NewService(configurationStorage ConfigurationStorage, slackBotAPI *slack.Cl
 	}
 
 	// initial *refresh
-	mod.refresh(configurationStorage.load())
-
-	var fileName = "test.json"
-	NewFileConfigurationStorage(&fileName).save(mod.getCurrentConfig())
+	mod.refresh(configurationStorage.Load())
 
 	return mod
 }
@@ -305,6 +302,10 @@ func (mod *service) refresh(config *Config) {
 		state = initTeamState(team, globalLocation, mod)
 		mod.teamStates[team.Name] = state
 	}
+}
+
+func(mod *service) saveConfig(){
+	mod.configurationStorage.Save(mod.getCurrentConfig())
 }
 
 func (mod *service) getCurrentConfig() *Config {

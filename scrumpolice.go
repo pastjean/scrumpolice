@@ -32,18 +32,33 @@ func main() {
 		log.Fatalln("slack bot token must be set in SCRUMPOLICE_SLACK_TOKEN")
 	}
 
+
+	logger := logrus.New()
+
+	permanentConfigFile := "db.json"
+	flag.StringVar(&permanentConfigFile, "databaseFile", permanentConfigFile, "The permanent database file")
+	flag.Parse()
 	configFile := "config.json"
 	flag.StringVar(&configFile, "config", configFile, "The configuration file")
 	flag.Parse()
 
-	// Injection
-	logger := logrus.New()
-	// TODO copy config before if necessary
-	configStorage := scrum.NewFileConfigurationStorage(&configFile)
 	slackAPIClient := slack.New(slackBotToken)
-	scrum := scrum.NewService(configStorage, slackAPIClient)
+	scrumService := scrum.NewService(initConfig(configFile, permanentConfigFile), slackAPIClient)
 
 	// Create and run bot
-	b := bot.New(slackAPIClient, logger, scrum)
+	b := bot.New(slackAPIClient, logger, scrumService)
 	b.Run()
+}
+
+func initConfig(configFileName string, permanentDbFileName string) scrum.ConfigurationStorage  {
+	var configStorage = scrum.NewFileConfigurationStorage(&permanentDbFileName)
+
+	if _, err := os.Stat(permanentDbFileName); os.IsNotExist(err) {
+		log.Println("Permanent config file does not exist. Will try to copy other config file if it exists. ")
+		configStorage.Save(scrum.NewFileConfigurationStorage(&configFileName).Load())
+	}
+	if configStorage.Load() == nil {
+		log.Fatal("Could not load proper configuration. Will not boot.")
+	}
+	return configStorage
 }

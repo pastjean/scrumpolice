@@ -10,7 +10,7 @@ type FileConfigurationStorage struct {
 	fileName *string
 }
 
-func (configStorage *FileConfigurationStorage) load() *Config {
+func (configStorage *FileConfigurationStorage) Load() *Config {
 	file, err := os.Open(*configStorage.fileName)
 	if err != nil {
 		log.Println("Cannot open file '", *configStorage.fileName, "', error:", err)
@@ -26,7 +26,7 @@ func (configStorage *FileConfigurationStorage) load() *Config {
 	return &config
 	}
 
-func (configStorage *FileConfigurationStorage) save(config *Config) {
+func (configStorage *FileConfigurationStorage) Save(config *Config) {
 	file, err := os.OpenFile(*configStorage.fileName, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Println("Cannot open file '", *configStorage.fileName, "', error:", err)
