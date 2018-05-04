@@ -184,6 +184,10 @@ func (b *Bot) chooseTeamToEdit(event *slack.MessageEvent, cb ChosenTeamFunc) boo
 		return false
 	}
 
+	if len(teams) == 1 {
+		return cb(event, teams[0])
+	}
+
 	choices := make([]string, len(teams))
 	sort.Strings(teams)
 	for i, team := range teams {
@@ -214,6 +218,7 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 		Text: "" +
 			"- `add @name`: Add *@name* to team\n" +
 			"- `remove @name`: Remove *@name* from team\n" +
+			"- `edit channel`: Edit the channel in which the scrum is posted\n" +
 			"- `edit schedule`: Edit the schedule of the scrum\n" +
 			"- `edit first reminder`: Edit the length of time before scrum to at which the users should be warned the first time\n" +
 			"- `edit second reminder`: Edit the length of time before scrum to at which the users should be warned the second time\n" +
@@ -223,14 +228,14 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 	params := slack.PostMessageParameters{AsUser: true}
 	params.Attachments = []slack.Attachment{message}
 
-	_, _, err := b.slackBotAPI.PostMessage(event.Channel, "What do you want to do with team"+team, params)
+	_, _, err := b.slackBotAPI.PostMessage(event.Channel, "What do you want to do with team "+team+"?", params)
 	if err != nil {
 		b.logSlackRelatedError(event, err, "Fail to post message to slack.")
 		return false
 	}
 
 	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
-		params := getParams(`(?i)(?P<action>add|remove|edit) <(?P<entity>.+)>\s*`, event.Text)
+		params := getParams(`(?i)(?P<action>add|remove|edit) <?(?P<entity>.+)>?\s*`, event.Text)
 		fmt.Println(params)
 
 		if len(params) == 0 || params["action"] == "" || params["entity"] == "" {
@@ -255,10 +260,55 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 			return b.ChangeUserAction(event, team, params["action"], username)
 		}else if action == "edit" && entity == "schedule"{
 
+		} else if action == "edit" && entity == "channel" {
+			return b.changeTeamChannel(event, team)
 		}
 
 		b.slackBotAPI.PostMessage(event.Channel, "Wrong choices, please try again :p or type `quit`", slack.PostMessageParameters{AsUser: true})
 		b.choosenTeamToEdit(event, team)
+		return false
+	}))
+
+	return false
+}
+
+func (b *Bot) changeTeamChannel(event *slack.MessageEvent, team string) bool {
+	author, err := b.slackBotAPI.GetUserInfo(event.User)
+	if err != nil {
+		b.logSlackRelatedError(event, err, "Fail to get user information.")
+		return false
+	}
+
+	msg := "In which channel should the team "+team+" scrum appear? Don't forget to invite me!"
+	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+
+	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
+		params := getParams(`(?i)<(@(?P<userchannel>[a-z0-9]+)|#[a-z0-9]+\|(?P<channel>.+))>.*`, event.Text)
+		fmt.Println(params)
+
+		if len(params) == 0 || (params["userchannel"] == "" && params["channel"] == "") {
+			b.slackBotAPI.PostMessage(event.Channel, "Wrong channel name. You can use `@someuser` or `#somechannel`. Please try again :p or type `quit`", slack.PostMessageParameters{AsUser: true})
+			b.changeTeamChannel(event, team)
+			return false
+		}
+
+
+		newChannel := params["userchannel"]
+		if params["channel"] != "" {
+			newChannel = params["channel"]
+		}
+
+		b.scrum.ChangeTeamChannel(team, newChannel)
+
+		b.slackBotAPI.PostMessage(event.Channel, "Done, I've updated the channel for the team "+team+"! I posted a message in the channel. If you didn't see the message, invite me in the channel!", slack.PostMessageParameters{AsUser: true})
+		b.slackBotAPI.PostMessage(newChannel, "The future scrums of the team "+team+" will appear in this channel!", slack.PostMessageParameters{AsUser: true})
+		log.WithFields(log.Fields{
+			"channel": newChannel,
+			"team":   team,
+			"doneBy": author.Name,
+		}).Info("Changed team channel.")
+
+		b.unsetUserContext(event.User)
 		return false
 	}))
 

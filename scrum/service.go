@@ -28,6 +28,7 @@ type Service interface {
 	DeleteTeam(team string)
 	AddToTeam(team string, username string)
 	RemoveFromTeam(team string, username string)
+	ChangeTeamChannel(team string, channel string)
 }
 
 type service struct {
@@ -497,6 +498,12 @@ func (m *service) AddTeam(team *Team) {
 
 func (m *service) DeleteTeam(team string) {
 	delete(m.teamStates, team)
+
+	m.saveConfig()
+}
+
+func (m *service) ChangeTeamChannel(team string, channel string) {
+	m.teamStates[team].Channel = channel
 
 	m.saveConfig()
 }
