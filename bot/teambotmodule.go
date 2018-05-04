@@ -259,7 +259,8 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 
 			return b.ChangeUserAction(event, team, params["action"], username)
 		}else if action == "edit" && entity == "schedule"{
-
+			return b.changeScrumSchedule(event, team)
+			
 		} else if action == "edit" && entity == "channel" {
 			return b.changeTeamChannel(event, team)
 		}
@@ -380,6 +381,54 @@ func (b *Bot) ChangeUserAction(event *slack.MessageEvent, team string, action st
 }
 
 func (b *Bot) changeScrumSchedule(event *slack.MessageEvent, team string) bool {
+	if b.doesTeamHaveMultipleScrums(event, team) {
+		msg := "Team `"+ team +"` has multiple scrums. Edition is currently not supported."
+		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+	}
 
+	msg := ":warning: *Modifying a scrum schedule while a scrum is in progress will reset all entered scrum reports!* :warning:\n"+
+		"Please enter a cron expression for the schedule.\n"+
+		"The format is the following:"
+	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+	msg = "```" + ` ┌───────────── minute (0 - 59)
+ │ ┌───────────── hour (0 - 23)
+ │ │ ┌───────────── day of month (1 - 31)
+ │ │ │ ┌───────────── month (1 - 12) - JAN to DEC are also allowed
+ │ │ │ │ ┌───────────── day of week (0 - 6 => Sunday to Saturday) - SUN to SAT are also allowed  
+ │ │ │ │ │                                    
+ │ │ │ │ │
+ │ │ │ │ │
+ * * * * * ` + "```"
+	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+	msg = "For example, a scrum with a deadline of 9:05 AM on monday, wednesday and friday would be `0 5 9 * * MON,WED,FRI`\n"+
+		"See https://godoc.org/github.com/robfig/cron for more information!"
+	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+
+	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
+		scheduleString := event.Text
+		fmt.Println(scheduleString)
+
+		schedule, err := cron.Parse(scheduleString)
+		if err != nil {
+			b.logSlackRelatedError(event, err, "Sorry, I do not understand the schedule format you sent me. Please try again, or type `quit`")
+			b.changeScrumSchedule(event, team)
 	return false
+		}
+
+		b.scrum.ReplaceScrumScheduleInTeam(team, schedule, scheduleString)
+		msg = "Schedule successfully changed!"
+		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+		b.unsetUserContext(event.User)
+		return false
+	}))
+	return false
+}
+
+func (b *Bot) doesTeamHaveMultipleScrums(event *slack.MessageEvent, team string) bool{
+	teamState, err :=  b.scrum.GetTeamByName(team);
+	if err != nil {
+		b.logSlackRelatedError(event, err, "Failed to get team information.")
+		return false
+	}
+	return len(teamState.QuestionsSets) > 1
 }

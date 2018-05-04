@@ -28,6 +28,7 @@ type Service interface {
 	DeleteTeam(team string)
 	AddToTeam(team string, username string)
 	RemoveFromTeam(team string, username string)
+	ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule, scheduleAsString string)
 	ChangeTeamChannel(team string, channel string)
 }
 
@@ -341,16 +342,19 @@ func initTeamState(team *Team, globalLocation *time.Location, mod *service) *Tea
 	}
 	state.Cron = cron.NewWithLocation(loc)
 
+	initTeamstate(team, state)
+
+	return state
+}
+
+func initTeamstate(team *Team, state *TeamState) {
 	for _, qs := range team.QuestionsSets {
 		state.questionSetStates[qs] = emptyQuestionSetState(qs)
 		state.Cron.Schedule(qs.ReportSchedule, &ScrumReportJob{state, qs})
 		state.Cron.Schedule(newScheduleDependentSchedule(qs.ReportSchedule, qs.FirstReminderBeforeReport), &ScrumReminderJob{First, state, qs})
 		state.Cron.Schedule(newScheduleDependentSchedule(qs.ReportSchedule, qs.LastReminderBeforeReport), &ScrumReminderJob{Last, state, qs})
 	}
-
 	state.Cron.Start()
-
-	return state
 }
 
 // scheduleDependentSchedule is a schedule that depends on another one to trigger.
@@ -498,6 +502,16 @@ func (m *service) AddTeam(team *Team) {
 
 func (m *service) DeleteTeam(team string) {
 	delete(m.teamStates, team)
+
+	m.saveConfig()
+}
+
+func (m *service) ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule, scheduleAsString string)  {
+	m.teamStates[team].Team.QuestionsSets[0].ReportSchedule = schedule
+	m.teamStates[team].Team.QuestionsSets[0].ReportScheduleCron = scheduleAsString
+
+	m.teamStates[team].Cron.Stop()
+	initTeamstate(m.teamStates[team].Team, m.teamStates[team])
 
 	m.saveConfig()
 }
