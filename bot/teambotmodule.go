@@ -235,7 +235,7 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 	}
 
 	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
-		params := getParams(`(?i)(?P<action>add|remove|edit) <?(?P<entity>.+)>?\s*`, event.Text)
+		params := getParams(`(?i)(?P<action>add|remove|edit) <?(?P<entity>.+[^>])>?\s*`, event.Text)
 		fmt.Println(params)
 
 		if len(params) == 0 || params["action"] == "" || params["entity"] == "" {
@@ -317,6 +317,8 @@ func (b *Bot) changeTeamChannel(event *slack.MessageEvent, team string) bool {
 		}).Info("Changed team channel.")
 
 		b.unsetUserContext(event.User)
+		b.choosenTeamToEdit(event, team)
+
 		return false
 	}))
 
@@ -364,6 +366,8 @@ func (b *Bot) changeScrumQuestion(event *slack.MessageEvent, team string, questi
 			b.printTeamQuestions(event, team)
 
 			b.unsetUserContext(event.User)
+			b.choosenTeamToEdit(event, team)
+
 			return false
 		}
 
@@ -402,6 +406,7 @@ func (b *Bot) ChangeUserAction(event *slack.MessageEvent, team string, action st
 			"team":   team,
 			"doneBy": author.Name,
 		}).Info("User was added to team.")
+
 	} else if action == "remove" {
 		users := b.scrum.GetUsersForTeam(team)
 		isInTeam := false
@@ -435,6 +440,8 @@ func (b *Bot) ChangeUserAction(event *slack.MessageEvent, team string, action st
 	}
 
 	b.unsetUserContext(event.User)
+	b.choosenTeamToEdit(event, team)
+
 	return false
 }
 
@@ -477,6 +484,9 @@ func (b *Bot) changeScrumSchedule(event *slack.MessageEvent, team string) bool {
 		msg = "Schedule successfully changed!"
 		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
 		b.unsetUserContext(event.User)
+
+		b.choosenTeamToEdit(event, team)
+
 		return false
 	}))
 	return false
@@ -512,6 +522,8 @@ func (b *Bot) changeFirstReminder(event *slack.MessageEvent, team string) bool {
 		msg = "First reminder duration successfully changed! The users will be warned " + strings.Replace(duration.String(), "-", "", -1) + " before the scrum."
 		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
 		b.unsetUserContext(event.User)
+		b.choosenTeamToEdit(event, team)
+
 		return false
 	}))
 	return false
@@ -547,6 +559,8 @@ func (b *Bot) changeSecondReminder(event *slack.MessageEvent, team string) bool 
 		msg = "Last reminder duration successfully changed! The users will be warned " + strings.Replace(duration.String(), "-", "", -1) + " before the scrum."
 		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
 		b.unsetUserContext(event.User)
+		b.choosenTeamToEdit(event, team)
+
 		return false
 	}))
 	return false

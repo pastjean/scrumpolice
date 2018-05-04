@@ -320,7 +320,7 @@ func (b *Bot) canQuitBotContextHandlerFunc(handler func(event *slack.MessageEven
 func (b *Bot) canQuitBotContext(handler BotContextHandler) BotContextHandler {
 	return BotContextHandlerFunc(func(event *slack.MessageEvent) bool {
 		if event.Text == "quit" {
-			b.slackBotAPI.PostMessage(event.Channel, "Action is canceled, if you wanna do anything else, just poke me, `help` is always available! :wave:", slack.PostMessageParameters{AsUser: true})
+			b.slackBotAPI.PostMessage(event.Channel, "Alright! If you wanna do anything else, just :poke: me, `help` is always available! :wave:", slack.PostMessageParameters{AsUser: true})
 			delete(b.userContexts, event.User)
 			return false
 		}

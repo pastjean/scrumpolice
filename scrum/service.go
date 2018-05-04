@@ -504,6 +504,7 @@ func (m *service) AddTeam(team *Team) {
 }
 
 func (m *service) DeleteTeam(team string) {
+	m.teamStates[team].Cron.Stop()
 	delete(m.teamStates, team)
 
 	m.saveConfig()
