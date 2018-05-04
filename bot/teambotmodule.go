@@ -258,9 +258,12 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 			username := user.Name
 
 			return b.ChangeUserAction(event, team, params["action"], username)
-		}else if action == "edit" && entity == "schedule"{
+		} else if action == "edit" && entity == "schedule"{
 			return b.changeScrumSchedule(event, team)
-			
+
+		} else if action == "edit" && entity == "questions"{
+			return b.changeScrumQuestions(event, team)
+
 		} else if action == "edit" && entity == "channel" {
 			return b.changeTeamChannel(event, team)
 		} else if action == "edit" && entity == "first reminder" {
@@ -315,6 +318,57 @@ func (b *Bot) changeTeamChannel(event *slack.MessageEvent, team string) bool {
 
 		b.unsetUserContext(event.User)
 		return false
+	}))
+
+	return false
+}
+
+func (b *Bot) changeScrumQuestions(event *slack.MessageEvent, team string) bool {
+	_, err := b.slackBotAPI.GetUserInfo(event.User)
+	if err != nil {
+		b.logSlackRelatedError(event, err, "Fail to get user information.")
+		return false
+	}
+
+	if b.doesTeamHaveMultipleScrums(event, team) {
+		msg := "Team `"+ team +"` has multiple scrums. Edition is currently not supported."
+		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+
+		return false;
+	}
+
+	b.printTeamQuestions(event, team)
+
+	return b.changeScrumQuestion(event, team, []string{})
+}
+
+func (b *Bot) printTeamQuestions(event *slack.MessageEvent, team string) {
+	qs := b.scrum.GetQuestionSetsForTeam(team)[0]
+	questions := make([]string, len(qs.Questions))
+	for i, question := range qs.Questions {
+		questions[i] = fmt.Sprintf("%d - %s", i, question)
+	}
+
+	msg := fmt.Sprintf("Current list of questions:\n%s", strings.Join(questions, "\n"))
+	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+}
+
+func (b *Bot) changeScrumQuestion(event *slack.MessageEvent, team string, questions []string) bool {
+	msg := "What is the next question? Type `done` when you are finished"
+	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
+
+	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
+		if strings.ToLower(event.Text) == "done" {
+			b.scrum.ReplaceScrumQuestionsInTeam(team, questions)
+
+			b.printTeamQuestions(event, team)
+
+			b.unsetUserContext(event.User)
+			return false
+		}
+
+		questions = append(questions, event.Text)
+		return b.changeScrumQuestion(event, team, questions)
 	}))
 
 	return false
