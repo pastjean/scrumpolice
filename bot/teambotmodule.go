@@ -130,15 +130,16 @@ func (b *Bot) chooseTeamName(event *slack.MessageEvent) bool {
 		}
 
 		members := []string{author.Name}
-		var firstReminderBefore time.Duration = -8 * time.Second
-		var lastReminderBefore time.Duration = -8 * time.Second
-		schedule, _ := cron.Parse("@every 30s")
+		defaultCron := "0 5 9 * * MON,WED,FRI"
+		var firstReminderBefore time.Duration = -50 * time.Minute
+		var lastReminderBefore time.Duration = -5 * time.Minute
+		schedule, _ := cron.Parse(defaultCron)
 
 		questions := []*scrum.QuestionSet{&scrum.QuestionSet{
 			Questions: []string{"What did you do yesterday?", "What will you do today?", "Are you being blocked by someone for a review? who? why?"},
 			FirstReminderBeforeReport: firstReminderBefore,
 			LastReminderBeforeReport: lastReminderBefore,
-			ReportScheduleCron: "@every 30s",
+			ReportScheduleCron: defaultCron,
 			ReportSchedule: schedule,
 		}}
 
