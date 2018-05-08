@@ -17,7 +17,27 @@ your team's channel at a predefined time.
 
 # Usage
 
-Create your configuration file:
+The minimal configuration file has the following format:
+```json
+{
+  "timezone": "America/Montreal",
+  "teams": [
+  ]
+}
+```
+This will allow you to boot the scrumpolice without any teams, which can then be added directly by slack.
+
+Run the bot with a slack bot user token:
+
+```sh
+SCRUMPOLICE_SLACK_TOKEN=xoxb-mytoken scrumpolice -databaseFile db.json
+```
+
+Command-line parameters:
+* **databaseFile**: the path to a file that will be used to save the configuration of the scrumpolice. If the file is not found, the bot will attempt to load the data from file specified in the *config* parameter. Defaults to *db.json*.
+* **config**: the path to a json configuration file that can be used to initialize the permanent config file. It will not be modified by any changes made by users of the bot. Defaults to *config.json*.
+
+Full configuration file syntax:
 
 ```json
 {
@@ -51,12 +71,6 @@ Create your configuration file:
 ```
 
 `split_report`: whether to post each scrum entry as a separate message or post all scrum entries in the same message.
-
-Run the bot with a slack bot user token
-
-```sh
-SCRUMPOLICE_SLACK_TOKEN=xoxb-mytoken scrumpolice -config config.json
-```
 
 # Development
 
