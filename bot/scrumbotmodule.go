@@ -15,10 +15,10 @@ import (
 // continue = true
 // stop = false
 func (b *Bot) HandleScrumMessage(event *slack.MessageEvent) bool {
-	// "start scrum [team] [date]"
+	// "start [team] [date]"
 	// [team == first and only team]
 	// [date == yesterday]
-	// starting scrum for team [team] date [date]. if you want to abort say stop scrum
+	// starting scrum for team [team] date [date]. if you want to abort say quit
 
 	// this module only takes case in private messages
 	if event.Channel[0] != 'D' {
@@ -29,7 +29,7 @@ func (b *Bot) HandleScrumMessage(event *slack.MessageEvent) bool {
 		return context.HandleMessage(event)
 	}
 
-	if strings.HasPrefix(strings.ToLower(event.Text), "start scrum") {
+	if strings.HasPrefix(strings.ToLower(event.Text), "start") {
 		return b.startScrum(event, false)
 	}
 
@@ -37,7 +37,7 @@ func (b *Bot) HandleScrumMessage(event *slack.MessageEvent) bool {
 		return b.startScrum(event, true)
 	}
 
-	if strings.ToLower(event.Text) == "restart scrum" {
+	if strings.ToLower(event.Text) == "restart" {
 		return b.restartScrum(event)
 	}
 
@@ -56,7 +56,7 @@ func (b *Bot) restartScrum(event *slack.MessageEvent) bool {
 		return false
 	}
 
-	b.slackBotAPI.PostMessage(event.Channel, "Your last report was deleted, you can `start scrum` a new one again", slack.PostMessageParameters{AsUser: true})
+	b.slackBotAPI.PostMessage(event.Channel, "Your last report was deleted, you can `start` a new one again", slack.PostMessageParameters{AsUser: true})
 	return false
 }
 
@@ -150,7 +150,7 @@ func (b *Bot) chooseContext(event *slack.MessageEvent, username string, team str
 
 func (b *Bot) choosenTeamAndContext(event *slack.MessageEvent, username string, team string, questionSet *scrum.QuestionSet, isSkipped bool) bool {
 	if isSkipped {
-		msg := fmt.Sprintf("Scrum report skipped for %s in team %s, type `restart scrum` if it should not be skipped", username, team)
+		msg := fmt.Sprintf("Scrum report skipped for %s in team %s, type `restart` if it should not be skipped", username, team)
 		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
 
 		b.scrum.SaveReport(&scrum.Report{
@@ -178,7 +178,7 @@ func (b *Bot) answerQuestions(event *slack.MessageEvent, questionSet *scrum.Ques
 	// We're finished, are we ?
 	if ans == len(questionSet.Questions) {
 		b.scrum.SaveReport(report, questionSet)
-		b.slackBotAPI.PostMessage(event.Channel, "Thanks for your scrum report my :deer:! :bear: with us for the digest. :owl: see you later!\n If you want to start again just say `restart scrum`", slack.PostMessageParameters{AsUser: true})
+		b.slackBotAPI.PostMessage(event.Channel, "Thanks for your scrum report my :deer:! :bear: with us for the digest. :owl: see you later!\n If you want to start again just say `restart`", slack.PostMessageParameters{AsUser: true})
 		b.unsetUserContext(event.User)
 		b.logger.WithFields(log.Fields{
 			"user": report.User,
