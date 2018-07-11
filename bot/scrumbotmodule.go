@@ -61,7 +61,7 @@ func (b *Bot) restartScrum(event *slack.MessageEvent) bool {
 }
 
 func (b *Bot) startScrum(event *slack.MessageEvent, isSkipped bool) bool {
-	// can we infer team (aka does the user only has one team)
+	// can we infer team (aka does the user only have one team)
 	// b.scrum.GetTeamForUser(event.User)
 	user, err := b.slackBotAPI.GetUserInfo(event.User)
 	if err != nil {

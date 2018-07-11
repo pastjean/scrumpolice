@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var SlackParams = slack.PostMessageParameters{AsUser: true}
+var SlackParams = slack.PostMessageParameters{AsUser: true, LinkNames: 1}
 
 type Service interface {
 	DeleteLastReport(username string) bool
@@ -100,7 +100,7 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 				attachment := slack.Attachment{
 					Color:      colorful.FastHappyColor().Hex(),
 					MarkdownIn: []string{"text", "pretext"},
-					Pretext:    member,
+					Pretext:    "@" + member,
 					Text:       "I am currently out of office :sunglasses: :palm_tree:",
 				}
 				attachments = append(attachments, attachment)
@@ -111,20 +111,24 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 			attachment := slack.Attachment{
 				Color:      colorful.FastHappyColor().Hex(),
 				MarkdownIn: []string{"text", "pretext"},
-				Pretext:    member,
+				Pretext:    "@" + member,
 				Text:       "Has nothing to declare (most probably :bee:cause he did nothing :troll:)",
 			}
 			attachments = append(attachments, attachment)
 		} else {
 			message := ""
-			for _, q := range qsstate.QuestionSet.Questions {
-				message += "`" + q + "`\n" + report.Answers[q] + "\n"
+			for idx, q := range qsstate.QuestionSet.Questions {
+				message += q "\n" + report.Answers[q]
+
+				if idx < len(qsstate.QuestionSet.Questions) - 1 {
+					message += "\n\n"
+				}
 			}
 
 			attachment := slack.Attachment{
 				Color:      colorful.FastHappyColor().Hex(),
 				MarkdownIn: []string{"text", "pretext"},
-				Pretext:    member,
+				Pretext:    "@" + member,
 				Text:       message,
 			}
 			attachments = append(attachments, attachment)
@@ -137,13 +141,15 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 		for i := 0; i < len(attachments); i++ {
 			params := slack.PostMessageParameters{
 				AsUser:      true,
+				LinkNames:   1,
 				Attachments: []slack.Attachment{attachments[i]},
 			}
-			ts.postMessageToSlack(ts.Channel, "*Scrum by*", params)
+			ts.postMessageToSlack(ts.Channel, "Scrum by:" , params)
 		}
 	} else {
 		params := slack.PostMessageParameters{
 			AsUser:      true,
+			LinkNames:   1,
 			Attachments: attachments,
 		}
 		ts.postMessageToSlack(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", params)
@@ -204,7 +210,7 @@ func (ts *TeamState) sendLastReminder(qs *QuestionSet) {
 		if !isMemberOutOfOffice(ts, member) {
 			_, ok := qsstate.enteredReports[member]
 			if !ok {
-				didNotDoReport = append(didNotDoReport, member)
+				didNotDoReport = append(didNotDoReport, "@"+member)
 			}
 		}
 	}
