@@ -217,13 +217,15 @@ func (b *Bot) help(event *slack.MessageEvent) {
 func (b *Bot) tutorial(event *slack.MessageEvent) {
 	params := slack.PostMessageParameters{AsUser: true}
 
-	b.slackBotAPI.PostMessage(event.Channel, "*Hi there* :wave: You're new, aren't you? You want to know how I do thing? Here :golang:es!", params)
-	b.slackBotAPI.PostMessage(event.Channel, "When you want to start a scrum report, just tell me `start` in a direct message :flag-dm:. _If you are part of more than one team, specify the team (I will ask you if you don't)_", params)
-	b.slackBotAPI.PostMessage(event.Channel, "Then, I will ask you a couple of questions, and wait for your answers. Once you anwsered all the questions, you're done :white_check_mark:.", params)
-	b.slackBotAPI.PostMessage(event.Channel, "I take care of the rest! :cop:", params)
-	b.slackBotAPI.PostMessage(event.Channel, "When it's time :clock10:, I will post the scrum report for you and your friends in your team's channel :raised_hands:\n", params)
-	b.slackBotAPI.PostMessage(event.Channel, "All you have to do now is read the report :book: (when you have the time, I don't want to rush you :scream:)", params)
-	b.slackBotAPI.PostMessage(event.Channel, "That's all. Enjoy :beers:.", params)
+	b.slackBotAPI.PostMessage(event.Channel,
+		"*Hi there* :wave: You're new, aren't you? You want to know how I do thing? Here :golang:es!\n"+
+			"When you want to start a scrum report, just tell me `start` in a direct message :flag-dm:. _If you are part of more than one team, specify the team (I will ask you if you don't)_\n"+
+			"Then, I will ask you a couple of questions, and wait for your answers. Once you anwsered all the questions, you're done :white_check_mark:.\n"+
+			"I take care of the rest! :cop:\n"+
+			"When it's time :clock10:, I will post the scrum report for you and your friends in your team's channel :raised_hands:\n"+
+			"All you have to do now is read the report :book: (when you have the time, I don't want to rush you :scream:)\n"+
+			"That's all. Enjoy :beers:.",
+		params)
 }
 
 func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string, resolveUser bool) {
