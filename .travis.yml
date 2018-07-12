@@ -8,11 +8,11 @@ services:
 script: 
   - go get -t -v ./...
   - go test -v ./...
-  - sh ./build.sh
+  - go build .
 
 after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
-    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
+    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
     docker build -t pastjean/scrumpolice .;
     docker tag pastjean/scrumpolice pastjean/scrumpolice:latest;
     docker push pastjean/scrumpolice:latest;
