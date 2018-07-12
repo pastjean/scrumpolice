@@ -118,9 +118,9 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 		} else {
 			message := ""
 			for idx, q := range qsstate.QuestionSet.Questions {
-				message += q "\n" + report.Answers[q]
+				message += q + "\n" + report.Answers[q]
 
-				if idx < len(qsstate.QuestionSet.Questions) - 1 {
+				if idx < len(qsstate.QuestionSet.Questions)-1 {
 					message += "\n\n"
 				}
 			}
@@ -144,7 +144,7 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 				LinkNames:   1,
 				Attachments: []slack.Attachment{attachments[i]},
 			}
-			ts.postMessageToSlack(ts.Channel, "Scrum by:" , params)
+			ts.postMessageToSlack(ts.Channel, "*Scrum by:*", params)
 		}
 	} else {
 		params := slack.PostMessageParameters{
