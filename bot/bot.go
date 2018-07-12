@@ -4,7 +4,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 
