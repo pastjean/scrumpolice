@@ -93,17 +93,13 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 
 	attachments := []slack.Attachment{}
 	didNotDoReport := []string{}
+	outOfOffice := []string{}
+
 	for _, member := range ts.Members {
 		report, ok := qsstate.enteredReports[member]
 		if !ok {
 			if isMemberOutOfOffice(ts, member) {
-				attachment := slack.Attachment{
-					Color:      colorful.FastHappyColor().Hex(),
-					MarkdownIn: []string{"text", "pretext"},
-					Pretext:    "@" + member,
-					Text:       "I am currently out of office :sunglasses: :palm_tree:",
-				}
-				attachments = append(attachments, attachment)
+				outOfOffice = append(outOfOffice, member)
 			} else {
 				didNotDoReport = append(didNotDoReport, member)
 			}
@@ -133,7 +129,25 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 			}
 			attachments = append(attachments, attachment)
 		}
+	}
 
+	if len(outOfOffice) > 0 {
+		persons := outOfOffice[0]
+		verb := "is"
+
+		if len(outOfOffice) > 1 {
+			persons = strings.Join(outOfOffice[0:(len(outOfOffice)-2)], ",") + " and " + outOfOffice[(len(outOfOffice)-1)]
+			verb = "are"
+		}
+
+		attachment := slack.Attachment{
+			Color:      colorful.FastHappyColor().Hex(),
+			MarkdownIn: []string{"text", "pretext"},
+			Pretext:    "Currently out of office",
+			Text:       persons + " " + verb + " currently out of office :sunglasses: :palm_tree:",
+		}
+
+		attachments = append(attachments, attachment)
 	}
 
 	if ts.SplitReport {
