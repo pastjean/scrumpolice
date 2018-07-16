@@ -229,9 +229,10 @@ func (b *Bot) tutorial(event *slack.MessageEvent) {
 
 func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string, resolveUser bool) {
 	params := slack.PostMessageParameters{AsUser: true}
-	username := userId
+	username := strings.TrimLeft("@", userId)
+
 	if resolveUser {
-		user, err := b.slackBotAPI.GetUserInfo(userId)
+		user, err := b.slackBotAPI.GetUserInfo(username)
 		if err != nil {
 			b.logSlackRelatedError(event, err, "Fail to get user information.")
 			b.slackBotAPI.PostMessage(event.Channel, "Hmmmm, I couldn't find you. Try again!", params)
@@ -252,14 +253,14 @@ func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string, resolveUser 
 			"doneBy": username,
 		}).Info("User was marked out of office.")
 	} else {
-		b.slackBotAPI.PostMessage(event.Channel, "I've marked @"+userId+" out of office in all of his teams", params)
+		b.slackBotAPI.PostMessage(event.Channel, "I've marked @"+username+" out of office in all of his teams", params)
 
 		user, err := b.slackBotAPI.GetUserInfo(event.User)
 		if err != nil {
 			b.logSlackRelatedError(event, err, "Fail to get user information.")
 			return
 		}
-		b.slackBotAPI.PostMessage("@"+userId, "You've been marked out of office by @"+user.Name+".", params)
+		b.slackBotAPI.PostMessage("@"+username, "You've been marked out of office by @"+user.Name+".", params)
 		log.WithFields(log.Fields{
 			"user":   userId,
 			"doneBy": user.Name,
