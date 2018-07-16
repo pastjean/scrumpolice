@@ -231,17 +231,17 @@ func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string, resolveUser 
 	params := slack.PostMessageParameters{AsUser: true}
 	username := strings.TrimLeft(userId, "@")
 
-	if resolveUser {
-		user, err := b.slackBotAPI.GetUserInfo(username)
-		if err != nil {
-			b.logSlackRelatedError(event, err, "Fail to get user information.")
-			b.slackBotAPI.PostMessage(event.Channel, "Hmmmm, I couldn't find you. Try again!", params)
-			return
-		}
-		username = user.Name
+	user, err := b.slackBotAPI.GetUserInfo(username)
+	if err == nil {
+		username = user.Profile.DisplayName
 	}
 
 	teams := b.scrum.GetTeamsForUser(username)
+	if len(teams) == 0 {
+		b.logSlackRelatedError(event, err, "Fail to get user information.")
+		b.slackBotAPI.PostMessage(event.Channel, "Hmmmm, I couldn't find any user matching '"+username+"' in any team. Try again!", params)
+		return
+	}
 
 	for _, team := range teams {
 		b.scrum.AddToOutOfOffice(team, username)
