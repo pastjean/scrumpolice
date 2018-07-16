@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	OutOfOfficeRegex, _ = regexp.Compile("^@?(.+) is out of office$")
+	OutOfOfficeRegex, _ = regexp.Compile("^(.+) is out of office$")
 )
 
 type (
