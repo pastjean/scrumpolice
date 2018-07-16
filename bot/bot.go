@@ -125,12 +125,12 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 	}
 
 	if eventText == "out of office" {
-		b.outOfOffice(event, event.User, true)
+		b.outOfOffice(event, event.User)
 		return
 	}
 
 	if OutOfOfficeRegex.MatchString(eventText) {
-		b.outOfOffice(event, strings.Split(strings.Trim(eventText, " "), " ")[0], false)
+		b.outOfOffice(event, strings.Split(strings.Trim(eventText, " "), " ")[0])
 		return
 	}
 
@@ -227,7 +227,7 @@ func (b *Bot) tutorial(event *slack.MessageEvent) {
 		params)
 }
 
-func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string, resolveUser bool) {
+func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string) {
 	params := slack.PostMessageParameters{AsUser: true}
 	username := strings.TrimLeft(userId, "@")
 
