@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	OutOfOfficeRegex, _ = regexp.Compile("(\\w+) is out of office")
+	OutOfOfficeRegex, _ = regexp.Compile("@?(\\w+) is out of office")
 )
 
 type (
@@ -229,7 +229,7 @@ func (b *Bot) tutorial(event *slack.MessageEvent) {
 
 func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string, resolveUser bool) {
 	params := slack.PostMessageParameters{AsUser: true}
-	username := strings.TrimLeft("@", userId)
+	username := strings.TrimLeft(userId, "@")
 
 	if resolveUser {
 		user, err := b.slackBotAPI.GetUserInfo(username)
