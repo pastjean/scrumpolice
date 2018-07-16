@@ -132,17 +132,19 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 	}
 
 	if len(outOfOffice) > 0 {
-		verb := "are"
+		persons := outOfOffice[0]
+		verb := "is"
 
-		if len(outOfOffice) == 1 {
-			verb = "is"
+		if len(outOfOffice) > 1 {
+			persons = strings.Join(outOfOffice[0:(len(outOfOffice)-2)], ",") + " and " + outOfOffice[(len(outOfOffice)-1)]
+			verb = "are"
 		}
 
 		attachment := slack.Attachment{
 			Color:      colorful.FastHappyColor().Hex(),
 			MarkdownIn: []string{"text", "pretext"},
 			Pretext:    "Currently out of office",
-			Text:       strings.Join(outOfOffice, ",") + " " + verb + " currently out of office :sunglasses: :palm_tree:",
+			Text:       persons + " " + verb + " currently out of office :sunglasses: :palm_tree:",
 		}
 
 		attachments = append(attachments, attachment)
