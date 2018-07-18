@@ -136,7 +136,7 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 		verb := "is"
 
 		if len(outOfOffice) > 1 {
-			persons = strings.Join(outOfOffice[0:(len(outOfOffice)-2)], ",") + " and " + outOfOffice[(len(outOfOffice)-1)]
+			persons = strings.Join(outOfOffice[0:(len(outOfOffice)-2)], ", ") + " and " + outOfOffice[(len(outOfOffice)-1)]
 			verb = "are"
 		}
 
@@ -155,7 +155,6 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 		for i := 0; i < len(attachments); i++ {
 			params := slack.PostMessageParameters{
 				AsUser:      true,
-				LinkNames:   1,
 				Attachments: []slack.Attachment{attachments[i]},
 			}
 			ts.postMessageToSlack(ts.Channel, "*Scrum by:*", params)
@@ -163,7 +162,6 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 	} else {
 		params := slack.PostMessageParameters{
 			AsUser:      true,
-			LinkNames:   1,
 			Attachments: attachments,
 		}
 		ts.postMessageToSlack(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", params)
