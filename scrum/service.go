@@ -16,19 +16,31 @@ var SlackParams = slack.PostMessageParameters{AsUser: true}
 
 type Service interface {
 	DeleteLastReport(username string) bool
+	GetTeams() []string
 	GetTeamByName(teamName string) (*TeamState, error)
 	GetTeamsForUser(username string) []string
 	GetQuestionSetsForTeam(team string) []*QuestionSet
+	GetUsersForTeam(team string) []string
 	SaveReport(report *Report, qs *QuestionSet)
 	AddToOutOfOffice(team string, username string)
 	RemoveFromOutOfOffice(team string, username string)
+	AddTeam(team *Team)
+	DeleteTeam(team string)
+	AddToTeam(team string, username string)
+	RemoveFromTeam(team string, username string)
+	ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule, scheduleAsString string)
+	ReplaceFirstReminderInTeam(team string, duration time.Duration)
+	ReplaceSecondReminderInTeam(team string, duration time.Duration)
+	ReplaceScrumQuestionsInTeam(team string, questions []string)
+	ChangeTeamChannel(team string, channel string)
 }
 
 type service struct {
-	configurationProvider ConfigurationProvider
-	teamStates            map[string]*TeamState
-	slackBotAPI           *slack.Client
-	lastEnteredReport     map[string]*Report
+	configurationStorage ConfigurationStorage
+	timezone             string
+	teamStates           map[string]*TeamState
+	slackBotAPI          *slack.Client
+	lastEnteredReport    map[string]*Report
 }
 
 type TeamState struct {
@@ -253,21 +265,16 @@ func (job *ScrumReminderJob) Run() {
 	}
 }
 
-func NewService(configurationProvider ConfigurationProvider, slackBotAPI *slack.Client) Service {
+func NewService(configurationStorage ConfigurationStorage, slackBotAPI *slack.Client) Service {
 	mod := &service{
-		configurationProvider: configurationProvider,
-		slackBotAPI:           slackBotAPI,
-		teamStates:            map[string]*TeamState{},
-		lastEnteredReport:     map[string]*Report{},
+		configurationStorage: configurationStorage,
+		slackBotAPI:          slackBotAPI,
+		teamStates:           map[string]*TeamState{},
+		lastEnteredReport:    map[string]*Report{},
 	}
 
 	// initial *refresh
-	mod.refresh(configurationProvider.Config())
-
-	configurationProvider.OnChange(func(cfg *Config) {
-		log.Println("Configuration File Changed refreshing state")
-		mod.refresh(cfg)
-	})
+	mod.refresh(configurationStorage.Load())
 
 	return mod
 }
@@ -279,15 +286,16 @@ func (mod *service) refresh(config *Config) {
 
 	globalLocation := time.Local
 	if config.Timezone != "" {
-		l, err := time.LoadLocation(config.Timezone)
+		location, err := time.LoadLocation(config.Timezone)
 		if err == nil {
-			globalLocation = l
+			globalLocation = location
 		} else {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Warn("Error loading global location, using default.")
 		}
 	}
+	mod.timezone = globalLocation.String()
 
 	for _, team := range teams {
 		state, ok := mod.teamStates[team.Name]
@@ -307,6 +315,23 @@ func (mod *service) refresh(config *Config) {
 	}
 }
 
+func(mod *service) saveConfig(){
+	mod.configurationStorage.Save(mod.getCurrentConfig())
+}
+
+func (mod *service) getCurrentConfig() *Config {
+	var teamConfigs []TeamConfig
+
+	for _, teamState := range mod.teamStates {
+		teamConfigs = append(teamConfigs, *teamState.Team.toTeamConfig())
+	}
+
+	return &Config{
+		Timezone: mod.timezone,
+		Teams:    teamConfigs,
+	}
+}
+
 func initTeamState(team *Team, globalLocation *time.Location, mod *service) *TeamState {
 	state := &TeamState{
 		Team:              team,
@@ -320,16 +345,19 @@ func initTeamState(team *Team, globalLocation *time.Location, mod *service) *Tea
 	}
 	state.Cron = cron.NewWithLocation(loc)
 
+	initTeamstate(team, state)
+
+	return state
+}
+
+func initTeamstate(team *Team, state *TeamState) {
 	for _, qs := range team.QuestionsSets {
 		state.questionSetStates[qs] = emptyQuestionSetState(qs)
 		state.Cron.Schedule(qs.ReportSchedule, &ScrumReportJob{state, qs})
 		state.Cron.Schedule(newScheduleDependentSchedule(qs.ReportSchedule, qs.FirstReminderBeforeReport), &ScrumReminderJob{First, state, qs})
 		state.Cron.Schedule(newScheduleDependentSchedule(qs.ReportSchedule, qs.LastReminderBeforeReport), &ScrumReminderJob{Last, state, qs})
 	}
-
 	state.Cron.Start()
-
-	return state
 }
 
 // scheduleDependentSchedule is a schedule that depends on another one to trigger.
@@ -357,6 +385,15 @@ func (s *scheduleDependentSchedule) Next(t time.Time) time.Time {
 	return s.depNext.Add(s.Duration)
 }
 
+func (m *service) GetTeams() []string {
+	teams := []string{}
+	for _, ts := range m.teamStates {
+		teams = append(teams, ts.Name)
+	}
+
+	return teams
+}
+
 func (m *service) GetTeamsForUser(username string) []string {
 	teams := []string{}
 	for _, ts := range m.teamStates {
@@ -381,6 +418,10 @@ func (m *service) GetTeamByName(teamName string) (*TeamState, error) {
 
 func (m *service) GetQuestionSetsForTeam(team string) []*QuestionSet {
 	return m.teamStates[team].QuestionsSets
+}
+
+func (m *service) GetUsersForTeam(team string) []string {
+	return m.teamStates[team].Members
 }
 
 func (m *service) SaveReport(report *Report, qs *QuestionSet) {
@@ -419,6 +460,8 @@ func (m *service) DeleteLastReport(user string) bool {
 
 func (m *service) AddToOutOfOffice(team string, username string) {
 	m.teamStates[team].OutOfOffice = append(m.teamStates[team].OutOfOffice, username)
+
+	m.saveConfig()
 }
 
 func (m *service) RemoveFromOutOfOffice(team string, username string) {
@@ -429,4 +472,83 @@ func (m *service) RemoveFromOutOfOffice(team string, username string) {
 		}
 	}
 	m.teamStates[team].OutOfOffice = ooof
+
+	m.saveConfig()
+}
+
+
+func (m *service) AddToTeam(team string, username string) {
+	m.teamStates[team].Members = append(m.teamStates[team].Members, username)
+
+	m.saveConfig()
+}
+
+func (m *service) RemoveFromTeam(team string, username string) {
+	var members []string
+	for _, member := range m.teamStates[team].Members {
+		if member != username {
+			members = append(members, member)
+		}
+	}
+	m.teamStates[team].Members = members
+
+	m.saveConfig()
+}
+
+func (m *service) AddTeam(team *Team) {
+	location, _ := time.LoadLocation(m.getCurrentConfig().Timezone)
+	state := initTeamState(team, location, m)
+	m.teamStates[team.Name] = state
+
+	m.saveConfig()
+}
+
+func (m *service) DeleteTeam(team string) {
+	m.teamStates[team].Cron.Stop()
+	delete(m.teamStates, team)
+
+	m.saveConfig()
+}
+
+func (m *service) ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule, scheduleAsString string)  {
+	m.teamStates[team].Team.QuestionsSets[0].ReportSchedule = schedule
+	m.teamStates[team].Team.QuestionsSets[0].ReportScheduleCron = scheduleAsString
+
+	m.teamStates[team].Cron.Stop()
+	initTeamstate(m.teamStates[team].Team, m.teamStates[team])
+
+	m.saveConfig()
+}
+
+func (m *service) ReplaceFirstReminderInTeam(team string, duration time.Duration)  {
+	m.teamStates[team].Team.QuestionsSets[0].FirstReminderBeforeReport = duration
+
+	m.teamStates[team].Cron.Stop()
+	initTeamstate(m.teamStates[team].Team, m.teamStates[team])
+
+	m.saveConfig()
+}
+
+func (m *service) ReplaceSecondReminderInTeam(team string, duration time.Duration)  {
+	m.teamStates[team].Team.QuestionsSets[0].LastReminderBeforeReport = duration
+
+	m.teamStates[team].Cron.Stop()
+	initTeamstate(m.teamStates[team].Team, m.teamStates[team])
+
+	m.saveConfig()
+}
+
+func (m *service) ReplaceScrumQuestionsInTeam(team string, questions []string)  {
+	m.teamStates[team].Cron.Stop()
+
+	m.teamStates[team].Team.QuestionsSets[0].Questions = questions
+	initTeamstate(m.teamStates[team].Team, m.teamStates[team])
+
+	m.saveConfig()
+}
+
+func (m *service) ChangeTeamChannel(team string, channel string) {
+	m.teamStates[team].Channel = channel
+
+	m.saveConfig()
 }
