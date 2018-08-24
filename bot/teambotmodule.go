@@ -249,14 +249,20 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 
 		// Handle user stuff
 		if strings.HasPrefix(entity, "@") && (action == "add" || action == "remove"){
-			user, err := b.slackBotAPI.GetUserInfo(strings.Replace(entity, "@", "", -1))
-			if err != nil {
+			rawUserName := strings.Replace(entity, "@", "", -1)
+			user, err := b.slackBotAPI.GetUserInfo(rawUserName)
+
+			// If the user does not exist, we can still try to remove the user.
+			if err != nil && action == "add" {
 				b.logSlackRelatedError(event, err, "Fail to get user information.")
 				b.slackBotAPI.PostMessage(event.Channel, "Hmmmm, I couldn't find the user. Try again!", slack.PostMessageParameters{AsUser: true})
 				b.choosenTeamToEdit(event, team)
 				return false
 			}
-			username := user.Name
+			username := rawUserName
+			if(user != nil){
+				username = user.Name
+			}
 
 			return b.ChangeUserAction(event, team, params["action"], username)
 		} else if action == "edit" && entity == "schedule"{
@@ -464,7 +470,7 @@ func (b *Bot) changeScrumSchedule(event *slack.MessageEvent, team string) bool {
  │ │ │ │ │                                    
  │ │ │ │ │
  │ │ │ │ │
- * * * * * ` + "```"
+ • • • • • ` + "```"
 	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
 	msg = "For example, a scrum with a deadline of 9:05 AM on monday, wednesday and friday would be `0 5 9 * * MON,WED,FRI`\n"+
 		"See https://godoc.org/github.com/robfig/cron for more information!"
