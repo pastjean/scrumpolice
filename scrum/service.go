@@ -339,11 +339,7 @@ func initTeamState(team *Team, globalLocation *time.Location, mod *service) *Tea
 		questionSetStates: map[*QuestionSet]*questionSetState{},
 	}
 
-	loc := globalLocation
-	if team.Timezone != nil {
-		loc = team.Timezone
-	}
-	state.Cron = cron.NewWithLocation(loc)
+	state.Cron = cron.NewWithLocation(team.Timezone)
 
 	initTeamstate(team, state)
 
@@ -497,6 +493,7 @@ func (m *service) RemoveFromTeam(team string, username string) {
 
 func (m *service) AddTeam(team *Team) {
 	location, _ := time.LoadLocation(m.getCurrentConfig().Timezone)
+	team.Timezone = location
 	state := initTeamState(team, location, m)
 	m.teamStates[team.Name] = state
 

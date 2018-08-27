@@ -64,12 +64,12 @@ type (
 func (c *Config) ToTeams() []*Team {
 	teams := []*Team{}
 	for _, teamConfig := range c.Teams {
-		teams = append(teams, teamConfig.ToTeam())
+		teams = append(teams, teamConfig.ToTeam(c.Timezone))
 	}
 	return teams
 }
 
-func (tc *TeamConfig) ToTeam() *Team {
+func (tc *TeamConfig) ToTeam(timezone string) *Team {
 	qsets := []*QuestionSet{}
 	for _, questionsetconfig := range tc.QuestionSets {
 		qs, err := questionsetconfig.toQuestionSet()
@@ -89,13 +89,15 @@ func (tc *TeamConfig) ToTeam() *Team {
 	}
 
 	if tc.Timezone != "" {
-		lloc, err := time.LoadLocation(tc.Timezone)
-		if err != nil {
-			log.Println("Timezone error for team:", tc.Name, "Will use default timezone")
-			lloc = nil
-		}
-		t.Timezone = lloc
+		timezone = tc.Timezone
 	}
+
+	lloc, err := time.LoadLocation(timezone)
+	if err != nil {
+		log.Println("Timezone error for team:", tc.Name, "Will use default timezone")
+		lloc = nil
+	}
+	t.Timezone = lloc
 
 	return t
 }
