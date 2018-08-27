@@ -88,17 +88,16 @@ func (tc *TeamConfig) ToTeam(timezone string) *Team {
 		SplitReport:   tc.SplitReport,
 	}
 
-	tz := timezone
 	if tc.Timezone != "" {
-		tz = tc.Timezone
+		timezone = tc.Timezone
 	}
 
-	lloc, err := time.LoadLocation(tz)
-		if err != nil {
-			log.Println("Timezone error for team:", tc.Name, "Will use default timezone")
-			lloc = nil
-		}
-		t.Timezone = lloc
+	lloc, err := time.LoadLocation(timezone)
+	if err != nil {
+		log.Println("Timezone error for team:", tc.Name, "Will use default timezone")
+		lloc = nil
+	}
+	t.Timezone = lloc
 
 	return t
 }
