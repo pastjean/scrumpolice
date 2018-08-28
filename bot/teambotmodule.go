@@ -462,15 +462,17 @@ func (b *Bot) changeScrumSchedule(event *slack.MessageEvent, team string) bool {
 		"Please enter a cron expression for the schedule.\n"+
 		"The format is the following:"
 	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
-	msg = "```" + ` ┌───────────── minute (0 - 59)
- │ ┌───────────── hour (0 - 23)
- │ │ ┌───────────── day of month (1 - 31)
- │ │ │ ┌───────────── month (1 - 12) - JAN to DEC are also allowed
- │ │ │ │ ┌───────────── day of week (0 - 6 => Sunday to Saturday) - SUN to SAT are also allowed  
- │ │ │ │ │                                    
- │ │ │ │ │
- │ │ │ │ │
- • • • • • ` + "```"
+	msg = "```" +
+` ┌───────────── seconds (0 - 59)
+ | ┌───────────── minute (0 - 59)
+ | │ ┌───────────── hour (0 - 23)
+ | │ │ ┌───────────── day of month (1 - 31)
+ | │ │ │ ┌───────────── month (1 - 12) - JAN to DEC are also allowed
+ | │ │ │ │ ┌───────────── day of week (0 - 6 => Sunday to Saturday) - SUN to SAT are also allowed  
+ | │ │ │ │ │                                    
+ | │ │ │ │ │
+ | │ │ │ │ │
+ • • • • • • ` + "```"
 	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
 	msg = "For example, a scrum with a deadline of 9:05 AM on monday, wednesday and friday would be `0 5 9 * * MON,WED,FRI`\n"+
 		"See https://godoc.org/github.com/robfig/cron for more information!"
@@ -562,7 +564,7 @@ func (b *Bot) changeSecondReminder(event *slack.MessageEvent, team string) bool 
 			return false
 		}
 
-		b.scrum.ReplaceFirstReminderInTeam(team, duration)
+		b.scrum.ReplaceLastReminderInTeam(team, duration)
 		msg = "Last reminder duration successfully changed! The users will be warned " + strings.Replace(duration.String(), "-", "", -1) + " before the scrum."
 		b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
 		b.unsetUserContext(event.User)

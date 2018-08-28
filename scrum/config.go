@@ -61,40 +61,40 @@ type (
 	}
 )
 
-func (c *Config) ToTeams() []*Team {
-	teams := []*Team{}
-	for _, teamConfig := range c.Teams {
-		teams = append(teams, teamConfig.ToTeam(c.Timezone))
+func (config *Config) ToTeams() []*Team {
+	var teams []*Team
+	for _, teamConfig := range config.Teams {
+		teams = append(teams, teamConfig.ToTeam(config.Timezone))
 	}
 	return teams
 }
 
-func (tc *TeamConfig) ToTeam(timezone string) *Team {
-	qsets := []*QuestionSet{}
-	for _, questionsetconfig := range tc.QuestionSets {
-		qs, err := questionsetconfig.toQuestionSet()
+func (teamConfig *TeamConfig) ToTeam(timezone string) *Team {
+	var questionsSet []*QuestionSet
+	for _, questionSetConfig := range teamConfig.QuestionSets {
+		questionSet, err := questionSetConfig.toQuestionSet()
 		if err != nil {
-			log.Println("error parsing question set for team", tc.Name, err)
+			log.Println("error parsing question set for team", teamConfig.Name, err)
 		} else {
-			qsets = append(qsets, qs)
+			questionsSet = append(questionsSet, questionSet)
 		}
 	}
 
 	t := &Team{
-		Name:          tc.Name,
-		Channel:       tc.Channel,
-		Members:       tc.Members,
-		QuestionsSets: qsets,
-		SplitReport:   tc.SplitReport,
+		Name:          teamConfig.Name,
+		Channel:       teamConfig.Channel,
+		Members:       teamConfig.Members,
+		QuestionsSets: questionsSet,
+		SplitReport:   teamConfig.SplitReport,
 	}
 
-	if tc.Timezone != "" {
-		timezone = tc.Timezone
+	if teamConfig.Timezone != "" {
+		timezone = teamConfig.Timezone
 	}
 
 	lloc, err := time.LoadLocation(timezone)
 	if err != nil {
-		log.Println("Timezone error for team:", tc.Name, "Will use default timezone")
+		log.Println("Timezone error for team:", teamConfig.Name, "Will use default timezone")
 		lloc = nil
 	}
 	t.Timezone = lloc
@@ -102,26 +102,26 @@ func (tc *TeamConfig) ToTeam(timezone string) *Team {
 	return t
 }
 
-func (qs *QuestionSetConfig) toQuestionSet() (*QuestionSet, error) {
-	schedule, err := cron.Parse(qs.ReportScheduleCron)
+func (questionSetConfig *QuestionSetConfig) toQuestionSet() (*QuestionSet, error) {
+	schedule, err := cron.Parse(questionSetConfig.ReportScheduleCron)
 	if err != nil {
 		return nil, err
 	}
 
-	fir, err := time.ParseDuration(qs.FirstReminderBeforeReport)
+	fir, err := time.ParseDuration(questionSetConfig.FirstReminderBeforeReport)
 	if err != nil {
 		return nil, err
 	}
 
-	sec, err := time.ParseDuration(qs.LastReminderBeforeReport)
+	sec, err := time.ParseDuration(questionSetConfig.LastReminderBeforeReport)
 	if err != nil {
 		return nil, err
 	}
 
 	return &QuestionSet{
-		Questions:                 qs.Questions,
+		Questions:                 questionSetConfig.Questions,
 		ReportSchedule:            schedule,
-		ReportScheduleCron:        qs.ReportScheduleCron,
+		ReportScheduleCron:        questionSetConfig.ReportScheduleCron,
 		FirstReminderBeforeReport: fir,
 		LastReminderBeforeReport:  sec,
 	}, nil

@@ -2,13 +2,10 @@
   "timezone": "America/Montreal",
   "teams": [
     {
-      "channel": "general",
+      "channel": "scrumpolicetest",
       "name": "L337",
       "members": [
-        "fboutin2",
-        "lbourdages",
-        "pa",
-        "jo"
+        "your_name_here"
       ],
       "split_report": true,
       "question_sets": [
