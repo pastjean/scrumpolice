@@ -463,7 +463,7 @@ func (b *Bot) changeScrumSchedule(event *slack.MessageEvent, team string) bool {
 		"The format is the following:"
 	b.slackBotAPI.PostMessage(event.Channel, msg, slack.PostMessageParameters{AsUser: true})
 	msg = "```" +
-		` ┌───────────── seconds (0 - 59)
+` ┌───────────── seconds (0 - 59)
  | ┌───────────── minute (0 - 59)
  | │ ┌───────────── hour (0 - 23)
  | │ │ ┌───────────── day of month (1 - 31)
