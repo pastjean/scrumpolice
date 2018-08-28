@@ -48,6 +48,6 @@ func (questionSet *QuestionSet) toQuestionSetConfig() *QuestionSetConfig {
 		Questions:                 questionSet.Questions,
 		ReportScheduleCron:        questionSet.ReportScheduleCron,
 		FirstReminderBeforeReport: questionSet.FirstReminderBeforeReport.String(),
-		LastReminderBeforeReport:  questionSet.FirstReminderBeforeReport.String(),
+		LastReminderBeforeReport:  questionSet.LastReminderBeforeReport.String(),
 	}
 }

@@ -30,7 +30,7 @@ type Service interface {
 	RemoveFromTeam(team string, username string)
 	ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule, scheduleAsString string)
 	ReplaceFirstReminderInTeam(team string, duration time.Duration)
-	ReplaceSecondReminderInTeam(team string, duration time.Duration)
+	ReplaceLastReminderInTeam(team string, duration time.Duration)
 	ReplaceScrumQuestionsInTeam(team string, questions []string)
 	ChangeTeamChannel(team string, channel string)
 }
@@ -80,35 +80,35 @@ func isMemberOutOfOffice(ts *TeamState, member string) bool {
 	return isOutOfOffice
 }
 
-func (ts *TeamState) postMessageToSlack(channel string, message string, params slack.PostMessageParameters) {
-	_, _, err := ts.service.slackBotAPI.PostMessage(channel, message, params)
+func (teamState *TeamState) postMessageToSlack(channel string, message string, params slack.PostMessageParameters) {
+	_, _, err := teamState.service.slackBotAPI.PostMessage(channel, message, params)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"team":    ts.Team.Name,
+			"team":    teamState.Team.Name,
 			"channel": channel,
 			"error":   err,
 		}).Warn("Error while posting message to slack")
 	}
 }
 
-func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
-	qsstate := ts.questionSetStates[qs]
+func (teamState *TeamState) sendReportForTeam(qs *QuestionSet) {
+	qsstate := teamState.questionSetStates[qs]
 	if qsstate.sent == true {
 		return
 	}
 	qsstate.sent = true
 
 	if len(qsstate.enteredReports) == 0 {
-		ts.postMessageToSlack(ts.Channel, "I'd like to take time to :shame: everyone for not reporting", SlackParams)
+		teamState.postMessageToSlack(teamState.Channel, "I'd like to take time to :shame: everyone for not reporting", SlackParams)
 		return
 	}
 
 	attachments := []slack.Attachment{}
 	didNotDoReport := []string{}
-	for _, member := range ts.Members {
+	for _, member := range teamState.Members {
 		report, ok := qsstate.enteredReports[member]
 		if !ok {
-			if isMemberOutOfOffice(ts, member) {
+			if isMemberOutOfOffice(teamState, member) {
 				attachment := slack.Attachment{
 					Color:      colorful.FastHappyColor().Hex(),
 					MarkdownIn: []string{"text", "pretext"},
@@ -144,77 +144,77 @@ func (ts *TeamState) sendReportForTeam(qs *QuestionSet) {
 
 	}
 
-	if ts.SplitReport {
-		ts.postMessageToSlack(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", slack.PostMessageParameters{AsUser: true})
+	if teamState.SplitReport {
+		teamState.postMessageToSlack(teamState.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", slack.PostMessageParameters{AsUser: true})
 		for i := 0; i < len(attachments); i++ {
 			params := slack.PostMessageParameters{
 				AsUser:      true,
 				Attachments: []slack.Attachment{attachments[i]},
 			}
-			ts.postMessageToSlack(ts.Channel, "*Scrum by*", params)
+			teamState.postMessageToSlack(teamState.Channel, "*Scrum by*", params)
 		}
 	} else {
 		params := slack.PostMessageParameters{
 			AsUser:      true,
 			Attachments: attachments,
 		}
-		ts.postMessageToSlack(ts.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", params)
+		teamState.postMessageToSlack(teamState.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", params)
 	}
 
 	if len(didNotDoReport) > 0 {
-		ts.postMessageToSlack(ts.Channel, fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), SlackParams)
+		teamState.postMessageToSlack(teamState.Channel, fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), SlackParams)
 	}
 
 	log.WithFields(log.Fields{
-		"team":    ts.Team.Name,
-		"channel": ts.Channel,
+		"team":    teamState.Team.Name,
+		"channel": teamState.Channel,
 	}).Info("Sent scrum report.")
 }
 
-func (ts *TeamState) sendFirstReminder(qs *QuestionSet) {
-	qsstate := ts.questionSetStates[qs]
+func (teamState *TeamState) sendFirstReminder(qs *QuestionSet) {
+	questionSetState := teamState.questionSetStates[qs]
 
 	log.WithFields(log.Fields{
-		"team":    ts.Team.Name,
-		"channel": ts.Channel,
+		"team":    teamState.Team.Name,
+		"channel": teamState.Channel,
 	}).Info("Sending first reminder.")
 
-	for _, member := range ts.Members {
-		if !isMemberOutOfOffice(ts, member) {
-			_, ok := qsstate.enteredReports[member]
+	for _, member := range teamState.Members {
+		if !isMemberOutOfOffice(teamState, member) {
+			_, ok := questionSetState.enteredReports[member]
 			if !ok {
-				_, _, err := ts.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report! `start scrum` to do it or `skip` if you have nothing to say", SlackParams)
+				_, _, err := teamState.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report! `start scrum` to do it or `skip` if you have nothing to say", SlackParams)
 				if err != nil {
 					log.WithFields(log.Fields{
-						"team":    ts.Team.Name,
+						"team":    teamState.Team.Name,
 						"member":  member,
-						"channel": ts.Channel,
+						"channel": teamState.Channel,
 						"error":   err,
 					}).Warn("Could not send first reminder.")
 				}
 			}
 		} else {
 			log.WithFields(log.Fields{
-				"team":    ts.Team.Name,
+				"team":    teamState.Team.Name,
 				"member":  member,
-				"channel": ts.Channel,
+				"channel": teamState.Channel,
 			}).Info("Member out of office, not sending reminder.")
 		}
 	}
 }
 
-func (ts *TeamState) sendLastReminder(qs *QuestionSet) {
-	qsstate := ts.questionSetStates[qs]
+func (teamState *TeamState) sendLastReminder(qs *QuestionSet) {
+	questionSetState := teamState.questionSetStates[qs]
 	didNotDoReport := []string{}
 
 	log.WithFields(log.Fields{
-		"team":    ts.Team.Name,
-		"channel": ts.Channel,
+		"team":    teamState.Team.Name,
+		"channel": teamState.Channel,
 	}).Info("Sending last reminder.")
 
-	for _, member := range ts.Members {
-		if !isMemberOutOfOffice(ts, member) {
-			_, ok := qsstate.enteredReports[member]
+	for _, member := range teamState.Members {
+		if !isMemberOutOfOffice(teamState, member) {
+			_, ok := questionSetState.enteredReports[member]
 			if !ok {
 				didNotDoReport = append(didNotDoReport, member)
 			}
@@ -226,7 +226,7 @@ func (ts *TeamState) sendLastReminder(qs *QuestionSet) {
 	}
 
 	memberThatDidNotDoReport := strings.Join(didNotDoReport, ", ")
-	ts.postMessageToSlack(ts.Channel, fmt.Sprintf("Last chance to fill report! :shame: to: %s", memberThatDidNotDoReport), SlackParams)
+	teamState.postMessageToSlack(teamState.Channel, fmt.Sprintf("Last chance to fill report! :shame: to: %s", memberThatDidNotDoReport), SlackParams)
 }
 
 type ScrumReportJob struct {
@@ -310,7 +310,7 @@ func (mod *service) refresh(config *Config) {
 			}).Info("Refreshing team.")
 			state.Cron.Stop()
 		}
-		state = initTeamState(team, globalLocation, mod)
+		state = initTeamStateWithLocation(team, globalLocation, mod)
 		mod.teamStates[team.Name] = state
 	}
 }
@@ -332,7 +332,7 @@ func (mod *service) getCurrentConfig() *Config {
 	}
 }
 
-func initTeamState(team *Team, globalLocation *time.Location, mod *service) *TeamState {
+func initTeamStateWithLocation(team *Team, globalLocation *time.Location, mod *service) *TeamState {
 	state := &TeamState{
 		Team:              team,
 		service:           mod,
@@ -341,12 +341,12 @@ func initTeamState(team *Team, globalLocation *time.Location, mod *service) *Tea
 
 	state.Cron = cron.NewWithLocation(team.Timezone)
 
-	initTeamstate(team, state)
+	initTeamState(team, state)
 
 	return state
 }
 
-func initTeamstate(team *Team, state *TeamState) {
+func initTeamState(team *Team, state *TeamState) {
 	for _, qs := range team.QuestionsSets {
 		state.questionSetStates[qs] = emptyQuestionSetState(qs)
 		state.Cron.Schedule(qs.ReportSchedule, &ScrumReportJob{state, qs})
@@ -494,7 +494,7 @@ func (m *service) RemoveFromTeam(team string, username string) {
 func (m *service) AddTeam(team *Team) {
 	location, _ := time.LoadLocation(m.getCurrentConfig().Timezone)
 	team.Timezone = location
-	state := initTeamState(team, location, m)
+	state := initTeamStateWithLocation(team, location, m)
 	m.teamStates[team.Name] = state
 
 	m.saveConfig()
@@ -512,7 +512,7 @@ func (m *service) ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule
 	m.teamStates[team].Team.QuestionsSets[0].ReportScheduleCron = scheduleAsString
 
 	m.teamStates[team].Cron.Stop()
-	initTeamstate(m.teamStates[team].Team, m.teamStates[team])
+	initTeamState(m.teamStates[team].Team, m.teamStates[team])
 
 	m.saveConfig()
 }
@@ -521,16 +521,16 @@ func (m *service) ReplaceFirstReminderInTeam(team string, duration time.Duration
 	m.teamStates[team].Team.QuestionsSets[0].FirstReminderBeforeReport = duration
 
 	m.teamStates[team].Cron.Stop()
-	initTeamstate(m.teamStates[team].Team, m.teamStates[team])
+	initTeamState(m.teamStates[team].Team, m.teamStates[team])
 
 	m.saveConfig()
 }
 
-func (m *service) ReplaceSecondReminderInTeam(team string, duration time.Duration)  {
+func (m *service) ReplaceLastReminderInTeam(team string, duration time.Duration)  {
 	m.teamStates[team].Team.QuestionsSets[0].LastReminderBeforeReport = duration
 
 	m.teamStates[team].Cron.Stop()
-	initTeamstate(m.teamStates[team].Team, m.teamStates[team])
+	initTeamState(m.teamStates[team].Team, m.teamStates[team])
 
 	m.saveConfig()
 }
@@ -539,7 +539,7 @@ func (m *service) ReplaceScrumQuestionsInTeam(team string, questions []string)  
 	m.teamStates[team].Cron.Stop()
 
 	m.teamStates[team].Team.QuestionsSets[0].Questions = questions
-	initTeamstate(m.teamStates[team].Team, m.teamStates[team])
+	initTeamState(m.teamStates[team].Team, m.teamStates[team])
 
 	m.saveConfig()
 }

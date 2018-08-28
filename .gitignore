@@ -6,3 +6,5 @@
 
 config.*.json
 !config.example.json
+
+db\.json
