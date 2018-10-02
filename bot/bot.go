@@ -87,6 +87,10 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		return
 	}
 
+	if !b.HandleTeamEditionMessage(event) {
+		return
+	}
+
 	// HANDLE GLOBAL PUBLIC COMMANDS HERE
 	if strings.Contains(eventText, ":wave:") {
 		b.reactToEvent(event, "wave")
@@ -134,7 +138,7 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		return
 	}
 
-	if eventText == "i'm back" || eventText == "i am back" {
+	if eventText == "i'm back" || eventText == "i am back" || eventText == "i’m back" {
 		b.backInOffice(event)
 		return
 	}
@@ -199,7 +203,10 @@ func (b *Bot) help(event *slack.MessageEvent) {
 			"- `restart`: restart your last done scrum, if it wasn't posted\n" +
 			"- `out of office`: mark current user as out of office (until `i'm back` is used)\n" +
 			"- `[user] is out of office`: mark the specified user as out of office (until he or she uses `i'm back`)\n" +
-			"- `i am back` or `i'm back`: mark current user as in office. MacOS smart quote can screw up with the `i'm back` command.",
+			"- `i am back` or `i'm back`: mark current user as in office. MacOS smart quote can screw up with the `i'm back` command\n" +
+			"- `add team`: create a new team with a basic configuration.\n" +
+			"- `remove team`: Delete the configuration of one of your teams. The team won't receive any more notifications :disappointed:\n" +
+			"- `edit team`: make changes to a team you are part of.",
 	}
 
 	params := slack.PostMessageParameters{AsUser: true}
@@ -310,7 +317,7 @@ func (b *Bot) canQuitBotContextHandlerFunc(handler func(event *slack.MessageEven
 func (b *Bot) canQuitBotContext(handler BotContextHandler) BotContextHandler {
 	return BotContextHandlerFunc(func(event *slack.MessageEvent) bool {
 		if event.Text == "quit" {
-			b.slackBotAPI.PostMessage(event.Channel, "Action is canceled, if you wanna do anything else, just poke me, `help` is always available! :wave:", slack.PostMessageParameters{AsUser: true})
+			b.slackBotAPI.PostMessage(event.Channel, "Alright! If you wanna do anything else, just :poke: me, `help` is always available! :wave:", slack.PostMessageParameters{AsUser: true})
 			delete(b.userContexts, event.User)
 			return false
 		}

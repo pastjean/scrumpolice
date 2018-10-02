@@ -1,12 +1,8 @@
 package scrum
 
 import (
-	"encoding/json"
 	"log"
-	"os"
 	"time"
-
-	"github.com/fsnotify/fsnotify"
 	"github.com/robfig/cron"
 )
 
@@ -40,10 +36,6 @@ import (
 //   ]
 // }
 type (
-	ConfigurationProvider interface {
-		Config() *Config
-		OnChange(handler func(cfg *Config))
-	}
 
 	// Config is the configuration format
 	Config struct {
@@ -56,6 +48,7 @@ type (
 		Channel      string              `json:"channel"`
 		Members      []string            `json:"members"`
 		QuestionSets []QuestionSetConfig `json:"question_sets"`
+		OutOfOffice  []string            `json:"out_of_office"`
 		Timezone     string              `json:"timezone"`
 		SplitReport  bool                `json:"split_report"`
 	}
@@ -67,66 +60,6 @@ type (
 		LastReminderBeforeReport  string   `json:"last_reminder_limit"`
 	}
 )
-
-type configFileWatcher struct {
-	config         *Config
-	changeHandlers []func(cfg *Config)
-}
-
-func NewConfigWatcher(file string) ConfigurationProvider {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fw := &configFileWatcher{changeHandlers: []func(cfg *Config){}}
-	go func() {
-		defer watcher.Close()
-		for {
-			select {
-			case event := <-watcher.Events:
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					log.Println("Configuration file modified '", event.Name, "', reloading...")
-					fw.reloadAndDistributeChange(file)
-				}
-			case err := <-watcher.Errors:
-				log.Println("Error while watching for configuration file:", err)
-			}
-		}
-	}()
-
-	err = watcher.Add(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("Loading initial configuration")
-	fw.reloadAndDistributeChange(file)
-	return fw
-}
-
-func (fw *configFileWatcher) Config() *Config {
-	return fw.config
-}
-
-func (fw *configFileWatcher) OnChange(handler func(cfg *Config)) {
-	fw.changeHandlers = append(fw.changeHandlers, handler)
-}
-
-func (fw *configFileWatcher) reloadAndDistributeChange(filename string) {
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Println("Cannot open file '", filename, "', error:", err)
-	}
-	err = json.NewDecoder(file).Decode(&fw.config)
-	if err != nil {
-		log.Println("Cannot parse configuration file ('", filename, "') content:", err)
-	}
-
-	for _, handler := range fw.changeHandlers {
-		go handler(fw.config)
-	}
-}
 
 func (c *Config) ToTeams() []*Team {
 	teams := []*Team{}
@@ -186,6 +119,7 @@ func (qs *QuestionSetConfig) toQuestionSet() (*QuestionSet, error) {
 	return &QuestionSet{
 		Questions:                 qs.Questions,
 		ReportSchedule:            schedule,
+		ReportScheduleCron:        qs.ReportScheduleCron,
 		FirstReminderBeforeReport: fir,
 		LastReminderBeforeReport:  sec,
 	}, nil
