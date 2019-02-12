@@ -12,8 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var SlackParams = slack.PostMessageParameters{AsUser: true}
-
 type Service interface {
 	DeleteLastReport(username string) bool
 	GetTeams() []string
@@ -80,8 +78,8 @@ func isMemberOutOfOffice(ts *TeamState, member string) bool {
 	return isOutOfOffice
 }
 
-func (teamState *TeamState) postMessageToSlack(channel string, message string, params slack.PostMessageParameters) {
-	_, _, err := teamState.service.slackBotAPI.PostMessage(channel, message, params)
+func (teamState *TeamState) postMessageToSlack(channel string, options ...slack.MsgOption) {
+	_, _, err := teamState.service.slackBotAPI.PostMessage(channel, append(options, slack.MsgOptionAsUser(true))...)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"team":    teamState.Team.Name,
@@ -99,7 +97,7 @@ func (teamState *TeamState) sendReportForTeam(qs *QuestionSet) {
 	qsstate.sent = true
 
 	if len(qsstate.enteredReports) == 0 {
-		teamState.postMessageToSlack(teamState.Channel, "I'd like to take time to :shame: everyone for not reporting", SlackParams)
+		teamState.postMessageToSlack(teamState.Channel, slack.MsgOptionText("I'd like to take time to :shame: everyone for not reporting", false))
 		return
 	}
 
@@ -145,24 +143,16 @@ func (teamState *TeamState) sendReportForTeam(qs *QuestionSet) {
 	}
 
 	if teamState.SplitReport {
-		teamState.postMessageToSlack(teamState.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", slack.PostMessageParameters{AsUser: true})
+		teamState.postMessageToSlack(teamState.Channel, slack.MsgOptionText(":parrotcop: Alrighty! Here's the scrum report for today!", false))
 		for i := 0; i < len(attachments); i++ {
-			params := slack.PostMessageParameters{
-				AsUser:      true,
-				Attachments: []slack.Attachment{attachments[i]},
-			}
-			teamState.postMessageToSlack(teamState.Channel, "*Scrum by*", params)
+			teamState.postMessageToSlack(teamState.Channel, slack.MsgOptionText("*Scrum by*", false), slack.MsgOptionAttachments([]slack.Attachment{attachments[i]}...))
 		}
 	} else {
-		params := slack.PostMessageParameters{
-			AsUser:      true,
-			Attachments: attachments,
-		}
-		teamState.postMessageToSlack(teamState.Channel, ":parrotcop: Alrighty! Here's the scrum report for today!", params)
+		teamState.postMessageToSlack(teamState.Channel, slack.MsgOptionText(":parrotcop: Alrighty! Here's the scrum report for today!", false), slack.MsgOptionAttachments(attachments...))
 	}
 
 	if len(didNotDoReport) > 0 {
-		teamState.postMessageToSlack(teamState.Channel, fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), SlackParams)
+		teamState.postMessageToSlack(teamState.Channel, slack.MsgOptionText(fmt.Sprintln("And lastly we should take a little time to shame", didNotDoReport), false))
 	}
 
 	log.WithFields(log.Fields{
@@ -183,7 +173,7 @@ func (teamState *TeamState) sendFirstReminder(qs *QuestionSet) {
 		if !isMemberOutOfOffice(teamState, member) {
 			_, ok := questionSetState.enteredReports[member]
 			if !ok {
-				_, _, err := teamState.service.slackBotAPI.PostMessage("@"+member, "Hey! Don't forget to fill your report! `start scrum` to do it or `skip` if you have nothing to say", SlackParams)
+				_, _, err := teamState.service.slackBotAPI.PostMessage("@"+member, slack.MsgOptionText("Hey! Don't forget to fill your report! `start scrum` to do it or `skip` if you have nothing to say", false))
 				if err != nil {
 					log.WithFields(log.Fields{
 						"team":    teamState.Team.Name,
@@ -226,7 +216,7 @@ func (teamState *TeamState) sendLastReminder(qs *QuestionSet) {
 	}
 
 	memberThatDidNotDoReport := strings.Join(didNotDoReport, ", ")
-	teamState.postMessageToSlack(teamState.Channel, fmt.Sprintf("Last chance to fill report! :shame: to: %s", memberThatDidNotDoReport), SlackParams)
+	teamState.postMessageToSlack(teamState.Channel, slack.MsgOptionText(fmt.Sprintf("Last chance to fill report! :shame: to: %s", memberThatDidNotDoReport), false))
 }
 
 type ScrumReportJob struct {
@@ -315,7 +305,7 @@ func (mod *service) refresh(config *Config) {
 	}
 }
 
-func(mod *service) saveConfig(){
+func (mod *service) saveConfig() {
 	mod.configurationStorage.Save(mod.getCurrentConfig())
 }
 
@@ -471,7 +461,6 @@ func (m *service) RemoveFromOutOfOffice(team string, username string) {
 
 	m.saveConfig()
 }
-
 
 func (m *service) AddToTeam(team string, username string) {
 	m.teamStates[team].Members = append(m.teamStates[team].Members, username)
