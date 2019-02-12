@@ -496,36 +496,40 @@ func (m *service) DeleteTeam(team string) {
 	m.saveConfig()
 }
 
-func (m *service) ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule, scheduleAsString string)  {
+func (m *service) ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule, scheduleAsString string) {
 	m.teamStates[team].Team.QuestionsSets[0].ReportSchedule = schedule
 	m.teamStates[team].Team.QuestionsSets[0].ReportScheduleCron = scheduleAsString
 
 	m.teamStates[team].Cron.Stop()
+	m.teamStates[team].Cron = cron.NewWithLocation(m.teamStates[team].Team.Timezone)
 	initTeamState(m.teamStates[team].Team, m.teamStates[team])
 
 	m.saveConfig()
 }
 
-func (m *service) ReplaceFirstReminderInTeam(team string, duration time.Duration)  {
+func (m *service) ReplaceFirstReminderInTeam(team string, duration time.Duration) {
 	m.teamStates[team].Team.QuestionsSets[0].FirstReminderBeforeReport = duration
 
 	m.teamStates[team].Cron.Stop()
+	m.teamStates[team].Cron = cron.NewWithLocation(m.teamStates[team].Team.Timezone)
 	initTeamState(m.teamStates[team].Team, m.teamStates[team])
 
 	m.saveConfig()
 }
 
-func (m *service) ReplaceLastReminderInTeam(team string, duration time.Duration)  {
+func (m *service) ReplaceLastReminderInTeam(team string, duration time.Duration) {
 	m.teamStates[team].Team.QuestionsSets[0].LastReminderBeforeReport = duration
 
 	m.teamStates[team].Cron.Stop()
+	m.teamStates[team].Cron = cron.NewWithLocation(m.teamStates[team].Team.Timezone)
 	initTeamState(m.teamStates[team].Team, m.teamStates[team])
 
 	m.saveConfig()
 }
 
-func (m *service) ReplaceScrumQuestionsInTeam(team string, questions []string)  {
+func (m *service) ReplaceScrumQuestionsInTeam(team string, questions []string) {
 	m.teamStates[team].Cron.Stop()
+	m.teamStates[team].Cron = cron.NewWithLocation(m.teamStates[team].Team.Timezone)
 
 	m.teamStates[team].Team.QuestionsSets[0].Questions = questions
 	initTeamState(m.teamStates[team].Team, m.teamStates[team])
