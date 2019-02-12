@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/coveord/scrumpolice/bot"
+	"github.com/coveord/scrumpolice/scrum"
 	"github.com/nlopes/slack"
-	"github.com/pastjean/scrumpolice/bot"
-	"github.com/pastjean/scrumpolice/scrum"
 	"github.com/sirupsen/logrus"
 )
 
