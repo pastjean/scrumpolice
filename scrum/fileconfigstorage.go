@@ -1,11 +1,10 @@
 package scrum
 
 import (
-	"os"
-	"log"
 	"encoding/json"
-	"bytes"
 	"io"
+	"log"
+	"os"
 )
 
 type FileConfigurationStorage struct {
@@ -29,8 +28,7 @@ func (configStorage *FileConfigurationStorage) Load() *Config {
 	}
 
 func (configStorage *FileConfigurationStorage) Save(config *Config) {
-	buffer := new(bytes.Buffer)
-	err := json.NewEncoder(buffer).Encode(config)
+	buffer, err := json.MarshalIndent(config, "", "    ")
 	if err != nil {
 		log.Println("Cannot serialize configuration state. content:", err)
 		return
@@ -42,7 +40,7 @@ func (configStorage *FileConfigurationStorage) Save(config *Config) {
 		return
 	}
 
-	io.Writer(file).Write(buffer.Bytes())
+	_, _ = io.Writer(file).Write(buffer)
 }
 
 func NewFileConfigurationStorage(fileName *string) ConfigurationStorage {

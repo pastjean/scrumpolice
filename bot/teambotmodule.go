@@ -223,7 +223,8 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 			"- `edit schedule`: Edit the schedule of the scrum\n" +
 			"- `edit first reminder`: Edit the length of time before scrum to at which the users should be warned the first time\n" +
 			"- `edit last reminder`: Edit the length of time before scrum to at which the users should be warned the second time\n" +
-			"- `edit questions: Edit the questions asked during scrum`",
+			"- `edit questions`: Edit the questions asked during scrum\n" +
+			"- `quit`: Stop editing and go back to your normal life",
 	}
 
 	_, _, err := b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("What do you want to do with team "+team+"?", false), AsUser, slack.MsgOptionAttachments([]slack.Attachment{message}...))
@@ -295,18 +296,11 @@ func (b *Bot) changeTeamChannel(event *slack.MessageEvent, team string) bool {
 	b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(msg, false), AsUser)
 
 	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
-		params := getParams(`(?i)<(@(?P<userchannel>[a-z0-9]+)|#[a-z0-9]+\|(?P<channel>.+))>.*`, event.Text)
-		fmt.Println(params)
-
-		if len(params) == 0 || (params["userchannel"] == "" && params["channel"] == "") {
+		newChannel, err := getChannelFromMessage(event.Text)
+		if err != nil {
 			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong channel name. You can use `@someuser` or `#somechannel`. Please try again :p or type `quit`", false), AsUser)
 			b.changeTeamChannel(event, team)
 			return false
-		}
-
-		newChannel := params["userchannel"]
-		if params["channel"] != "" {
-			newChannel = params["channel"]
 		}
 
 		b.scrum.ChangeTeamChannel(team, newChannel)
