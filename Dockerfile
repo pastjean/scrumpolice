@@ -6,7 +6,7 @@ RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 # Create appuser
 RUN adduser -D -g '' appuser
 
-WORKDIR /go/src/github.com/pastjean/scrumpolice/
+WORKDIR /go/src/github.com/coveord/scrumpolice/
 COPY . .
 
 RUN go get ./...
