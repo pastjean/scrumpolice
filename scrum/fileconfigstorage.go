@@ -40,7 +40,9 @@ func (configStorage *FileConfigurationStorage) Save(config *Config) {
 		return
 	}
 
-	_, _ = io.Writer(file).Write(buffer)
+	if _, err = io.Writer(file).Write(buffer); err != nil {
+		log.Println("Cannot write configuration to file. error:", err)
+	}
 }
 
 func NewFileConfigurationStorage(fileName *string) ConfigurationStorage {
