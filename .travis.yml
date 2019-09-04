@@ -13,7 +13,7 @@ script:
 after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
     docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
-    docker build -t pastjean/scrumpolice .;
-    docker tag pastjean/scrumpolice pastjean/scrumpolice:latest;
-    docker push pastjean/scrumpolice:latest;
+    docker build -t coveo/scrumpolice .;
+    docker tag coveo/scrumpolice coveo/scrumpolice:latest;
+    docker push coveo/scrumpolice:latest;
     fi
