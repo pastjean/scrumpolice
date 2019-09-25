@@ -122,7 +122,7 @@ func (teamState *TeamState) sendReportForTeam(qs *QuestionSet) {
 				Color:      colorful.FastHappyColor().Hex(),
 				MarkdownIn: []string{"text", "pretext"},
 				Pretext:    member,
-				Text:       "Has nothing to declare (most probably :bee:cause he did nothing :troll:)",
+				Text:       "Has nothing to declare (most probably :bee:cause they did nothing :troll:)",
 			}
 			attachments = append(attachments, attachment)
 		} else {
