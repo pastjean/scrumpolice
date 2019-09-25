@@ -10,7 +10,7 @@ WORKDIR /go/src/github.com/coveord/scrumpolice/
 COPY . .
 
 RUN go get ./...
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-w -s" -o /scrumpolice .
+RUN GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-w -s" -o /scrumpolice .
 
 FROM alpine:3.6
 # We would like to use "scratch" but the tzdata package is kinda complicated
