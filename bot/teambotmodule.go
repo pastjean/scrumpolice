@@ -201,8 +201,8 @@ func (b *Bot) chooseTeamToEdit(event *slack.MessageEvent, cb ChosenTeamFunc) boo
 	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
 		i, err := strconv.Atoi(event.Text)
 
-		if i < 0 || i >= len(teams) || err != nil {
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choices, please try again :p or type `quit`", false), AsUser)
+		if i <= 0 || i >= len(teams) || err != nil {
+			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, please try again or type `quit`", false), AsUser)
 			b.chooseTeamToEdit(event, cb)
 			return false
 		}
@@ -238,7 +238,7 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 		fmt.Println(params)
 
 		if len(params) == 0 || params["action"] == "" || params["entity"] == "" {
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choices, please try again :p or type `quit`", false), AsUser)
+			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, please try again or type `quit`", false), AsUser)
 			b.choosenTeamToEdit(event, team)
 			return false
 		}
@@ -277,7 +277,7 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 			return b.changeSecondReminder(event, team)
 		}
 
-		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choices, please try again :p or type `quit`", false), AsUser)
+		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, please try again or type `quit`", false), AsUser)
 		b.choosenTeamToEdit(event, team)
 		return false
 	}))
