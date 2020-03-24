@@ -97,7 +97,7 @@ func (b *Bot) chooseTeam(event *slack.MessageEvent, username string, teams []str
 		i, err := strconv.Atoi(event.Text)
 
 		if i < 0 || i >= len(teams) || err != nil {
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choices, please try again :p or type `quit`", false), AsUser)
+			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, please try again or type `quit`", false), AsUser)
 			b.chooseTeam(event, username, teams, isSkipped)
 			return false
 		}
@@ -136,8 +136,8 @@ func (b *Bot) chooseContext(event *slack.MessageEvent, username string, team str
 	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
 		i, err := strconv.Atoi(event.Text)
 
-		if i < 0 || i >= len(questionSets) || err != nil {
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choices, please try again :p or type `quit`", false), AsUser)
+		if i <= 0 || i >= len(questionSets) || err != nil {
+			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, please try again or type `quit`", false), AsUser)
 			b.chooseContext(event, username, team, questionSets, isSkipped)
 			return false
 		}
