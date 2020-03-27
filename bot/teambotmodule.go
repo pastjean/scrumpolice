@@ -56,7 +56,7 @@ func (b *Bot) startTeamDeletion(event *slack.MessageEvent) bool {
 	_, err := b.slackBotAPI.GetUserInfo(event.User)
 	if err != nil {
 		b.logSlackRelatedError(event, err, "Fail to get user information.")
-		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("There was an error editing the team, please try again", false), AsUser)
+		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("There was an error editing the team, please try again.", false), AsUser)
 		return false
 	}
 
@@ -80,7 +80,7 @@ func (b *Bot) chosenTeamToDelete(event *slack.MessageEvent, team string) bool {
 
 			b.scrum.DeleteTeam(team)
 
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I've deleted the team "+team, false), AsUser)
+			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I've deleted team "+team, false), AsUser)
 			log.WithFields(log.Fields{
 				"team":   team,
 				"doneBy": author.Name,
@@ -100,7 +100,7 @@ func (b *Bot) startTeamCreation(event *slack.MessageEvent) bool {
 	_, err := b.slackBotAPI.GetUserInfo(event.User)
 	if err != nil {
 		b.logSlackRelatedError(event, err, "Fail to get user information.")
-		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("There was an error editing the team, please try again", false), AsUser)
+		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("There was an error editing the team, please try again.", false), AsUser)
 		return false
 	}
 
@@ -161,7 +161,7 @@ func (b *Bot) startTeamEdition(event *slack.MessageEvent) bool {
 	_, err := b.slackBotAPI.GetUserInfo(event.User)
 	if err != nil {
 		b.logSlackRelatedError(event, err, "Fail to get user information.")
-		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("There was an error editing the team, please try again", false), AsUser)
+		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("There was an error editing the team, please try again.", false), AsUser)
 		return false
 	}
 
@@ -181,7 +181,7 @@ func (b *Bot) chooseTeamToEdit(event *slack.MessageEvent, cb ChosenTeamFunc) boo
 
 	teams := b.scrum.GetTeamsForUser(user.Name)
 	if len(teams) == 0 {
-		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("There is no teams, use 'add team' to create a new team", false), AsUser)
+		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("There are no teams, use 'add team' to create a new team.", false), AsUser)
 		return false
 	}
 
@@ -192,7 +192,8 @@ func (b *Bot) chooseTeamToEdit(event *slack.MessageEvent, cb ChosenTeamFunc) boo
 	choices := make([]string, len(teams))
 	sort.Strings(teams)
 	for i, team := range teams {
-		choices[i] = fmt.Sprintf("%d - %s", i, team)
+		// i+1 is included because if the user inputs "0", it becomes "" and throws an error during `edit team` and `remove team`
+		choices[i] = fmt.Sprintf("%d - %s", i+1, team)
 	}
 
 	msg := fmt.Sprintf("Choose a team :\n%s", strings.Join(choices, "\n"))
@@ -200,14 +201,14 @@ func (b *Bot) chooseTeamToEdit(event *slack.MessageEvent, cb ChosenTeamFunc) boo
 
 	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
 		i, err := strconv.Atoi(event.Text)
-
-		if i < 0 || i >= len(teams) || err != nil {
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choices, please try again :p or type `quit`", false), AsUser)
+		// len(teams+1) related to above comment
+		if i < 0 || i >= len(teams)+1 || err != nil {
+			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, please try again or type `quit`", false), AsUser)
 			b.chooseTeamToEdit(event, cb)
 			return false
 		}
-
-		return cb(event, teams[i])
+		// i-1 is related to above comments
+		return cb(event, teams[i-1])
 	}))
 
 	return false
@@ -238,7 +239,7 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 		fmt.Println(params)
 
 		if len(params) == 0 || params["action"] == "" || params["entity"] == "" {
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choices, please try again :p or type `quit`", false), AsUser)
+			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, please try again or type `quit`", false), AsUser)
 			b.choosenTeamToEdit(event, team)
 			return false
 		}
@@ -253,7 +254,7 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 			// If the user does not exist, we can still try to remove the user.
 			if err != nil && action == "add" {
 				b.logSlackRelatedError(event, err, "Fail to get user information.")
-				b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Hmmmm, I couldn't find the user. Try again!", false), AsUser)
+				b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Hmm... I couldn't find the user. Try again!", false), AsUser)
 				b.choosenTeamToEdit(event, team)
 				return false
 			}
@@ -277,7 +278,7 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 			return b.changeSecondReminder(event, team)
 		}
 
-		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choices, please try again :p or type `quit`", false), AsUser)
+		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, please try again or type `quit`", false), AsUser)
 		b.choosenTeamToEdit(event, team)
 		return false
 	}))
@@ -298,15 +299,15 @@ func (b *Bot) changeTeamChannel(event *slack.MessageEvent, team string) bool {
 	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
 		newChannel, err := getChannelFromMessage(event.Text)
 		if err != nil {
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong channel name. You can use `@someuser` or `#somechannel`. Please try again :p or type `quit`", false), AsUser)
+			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong channel name; you can use `@someuser` or `#somechannel`. Try again or type `quit`", false), AsUser)
 			b.changeTeamChannel(event, team)
 			return false
 		}
 
 		b.scrum.ChangeTeamChannel(team, newChannel)
 
-		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Done, I've updated the channel for the team "+team+"! I posted a message in the channel. If you didn't see the message, invite me in the channel!", false), AsUser)
-		b.slackBotAPI.PostMessage(newChannel, slack.MsgOptionText("The future scrums of the team "+team+" will appear in this channel!", false), AsUser)
+		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I've updated the channel for team "+team+" and I posted a message in its channel. If you didn't see the message, invite me in the channel!", false), AsUser)
+		b.slackBotAPI.PostMessage(newChannel, slack.MsgOptionText("The future scrums of team "+team+" will appear in this channel!", false), AsUser)
 		log.WithFields(log.Fields{
 			"channel": newChannel,
 			"team":    team,
@@ -345,15 +346,16 @@ func (b *Bot) printTeamQuestions(event *slack.MessageEvent, team string) {
 	qs := b.scrum.GetQuestionSetsForTeam(team)[0]
 	questions := make([]string, len(qs.Questions))
 	for i, question := range qs.Questions {
-		questions[i] = fmt.Sprintf("%d - %s", i, question)
+		// Included i+1 here to make things consistent for users
+		questions[i] = fmt.Sprintf("%d - %s", i+1, question)
 	}
 
-	msg := fmt.Sprintf("Current list of questions:\n%s", strings.Join(questions, "\n"))
+	msg := fmt.Sprintf("Current questions:\n%s", strings.Join(questions, "\n"))
 	b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(msg, false), AsUser)
 }
 
 func (b *Bot) changeScrumQuestion(event *slack.MessageEvent, team string, questions []string) bool {
-	msg := "What is the next question? Type `done` when you are finished"
+	msg := "What's the next question? Type `done` when you are finished."
 	b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(msg, false), AsUser)
 
 	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
@@ -397,7 +399,7 @@ func (b *Bot) ChangeUserAction(event *slack.MessageEvent, team string, action st
 			return false
 		}
 
-		b.slackBotAPI.PostMessage("@"+username, slack.MsgOptionText("You've been added in team "+team+" by @"+author.Name+".", false), AsUser)
+		b.slackBotAPI.PostMessage("@"+username, slack.MsgOptionText("You've been added to team "+team+" by @"+author.Name+".", false), AsUser)
 		log.WithFields(log.Fields{
 			"user":   username,
 			"team":   team,
@@ -412,7 +414,7 @@ func (b *Bot) ChangeUserAction(event *slack.MessageEvent, team string, action st
 		}
 
 		if !isInTeam {
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("@"+username+" is not in the team "+team+". I'm no magician!", false), AsUser)
+			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("@"+username+" is not in team "+team+". I'm no magician!", false), AsUser)
 			b.choosenTeamToEdit(event, team)
 
 			return false
@@ -474,7 +476,7 @@ func (b *Bot) changeScrumSchedule(event *slack.MessageEvent, team string) bool {
 
 		schedule, err := cron.Parse(scheduleString)
 		if err != nil {
-			b.logSlackRelatedError(event, err, "Sorry, I do not understand the schedule format you sent me. Please try again, or type `quit`")
+			b.logSlackRelatedError(event, err, "Sorry, I do not understand the schedule format you sent me. Try again or type `quit`")
 			b.changeScrumSchedule(event, team)
 			return false
 		}
@@ -512,7 +514,7 @@ func (b *Bot) changeFirstReminder(event *slack.MessageEvent, team string) bool {
 		}
 		duration, err := time.ParseDuration(durationString)
 		if err != nil {
-			b.logSlackRelatedError(event, err, "Sorry, I do not understand the duration format you sent me. Please try again, or type `quit`")
+			b.logSlackRelatedError(event, err, "Sorry, I do not understand the duration format you sent me. Try again or type `quit`")
 			b.changeFirstReminder(event, team)
 			return false
 		}
@@ -549,7 +551,7 @@ func (b *Bot) changeSecondReminder(event *slack.MessageEvent, team string) bool 
 		}
 		duration, err := time.ParseDuration(durationString)
 		if err != nil {
-			b.logSlackRelatedError(event, err, "Sorry, I do not understand the duration format you sent me. Please try again, or type `quit`")
+			b.logSlackRelatedError(event, err, "Sorry, I do not understand the duration format you sent me. Try again or type `quit`")
 			b.changeSecondReminder(event, team)
 			return false
 		}

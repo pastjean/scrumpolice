@@ -19,7 +19,7 @@ const header = "                                           _ _\n" +
 	"|___/\\___|_|   \\__,_|_| |_| |_| .__/ \\___/|_|_|\\___\\___|\n" +
 	"                              |_|"
 
-const Version = "0.7.1"
+const Version = "0.7.2"
 
 func main() {
 	fmt.Println(header)
