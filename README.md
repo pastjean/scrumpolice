@@ -7,15 +7,23 @@
                               |_|
 ```
 
-[![Build Status](https://travis-ci.org/pastjean/scrumpolice.svg?branch=master)](https://travis-ci.org/pastjean/scrumpolice)
-[![Go Report Card](https://goreportcard.com/badge/github.com/pastjean/scrumpolice)](https://goreportcard.com/report/github.com/pastjean/scrumpolice)
+Scrum bot asks every member of your team for a scrum report then reports it to
+your team's channel at a predetermined time.
 
-Scrum bot ask every member of your team for a scrum report then reports it to
-your team's channel at a predefined time.
 
-- [Jason Fried's - Status meetings are the scourge](https://m.signalvnoise.com/status-meetings-are-the-scourge-39f49267ca90) started all the fuzz.
+## Contribute
 
-# Usage
+```sh
+you@w3rk:~$ git clone https://github.com/coveord/scrumpolice.git scrumpolice-github
+you@w3rk:~$ cd scrumpolice-github
+# create a branch
+you@w3rk:~/scrumpolice-github$ git branch type/ticket-short-description
+# make changes
+# save
+# Go see the Bitbucket README to continue testing env setup: https://bitbucket.org/coveord/scrumpolice
+```
+
+## Usage
 
 The minimal configuration file has the following format:
 ```json
@@ -71,16 +79,3 @@ Full configuration file syntax:
 ```
 
 `split_report`: whether to post each scrum entry as a separate message or post all scrum entries in the same message.
-
-# Development
-
-Have a working go environment (since 1.8 just install go) otherwise you need the
-`$GOPATH` set and use that instead of `$HOME/go`.
-
-```sh
-go get github.com/pastjean/scrumpolice
-cd $HOME/go/src/github.com/pastjean/scrumpolice
-dep ensure
-# Run it
-SCRUMPOLICE_SLACK_TOKEN=xoxb-mytoken go run cmd/scrumpolice/scrumpolice.go -config config.example.json
-```
