@@ -98,7 +98,7 @@ func (b *Bot) chooseTeam(event *slack.MessageEvent, username string, teams []str
 		i, err := strconv.Atoi(event.Text)
 		// len(teams+1) related to above comment
 		if i < 1 || i >= len(teams)+1 || err != nil {
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, try again or type quit.", false), AsUser)
+			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, try again or type 'quit'", false), AsUser)
 			b.chooseTeam(event, username, teams, isSkipped)
 			return false
 		}
