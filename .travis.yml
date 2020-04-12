@@ -14,13 +14,13 @@ before_script:
 services:
   - docker
 
-script: 
+script:
   - go get -t -v ./...
   - go test -v ./...
   - sh ./build.sh
 
 after_success:
-  - if [ "$TRAVIS_BRANCH" == "master" ]; then
+  - if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
     docker build -t coveo/scrumpolice .;
     docker tag coveo/scrumpolice coveo/scrumpolice:latest;
