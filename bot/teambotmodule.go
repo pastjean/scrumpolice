@@ -22,6 +22,12 @@ func (b *Bot) HandleTeamEditionMessage(event *slack.MessageEvent) bool {
 	// [name == name of the team]
 	// editing team [name]. if you want to abort say stop scrum
 
+	// this module only takes case in private messages
+	// D stands for direct message
+	if event.Channel[0] != 'D' {
+		return true
+	}
+
 	if context, ok := b.userContexts[event.User]; ok {
 		return context.HandleMessage(event)
 	}
@@ -135,7 +141,7 @@ func (b *Bot) chooseTeamName(event *slack.MessageEvent) bool {
 		var lastReminderBefore time.Duration = -5 * time.Minute
 		schedule, _ := cron.Parse(defaultCron)
 
-		questions := []*scrum.QuestionSet{&scrum.QuestionSet{
+		questions := []*scrum.QuestionSet{{
 			Questions:                 []string{"What did you do yesterday?", "What will you do today?", "Are you being blocked by someone for a review? who? why?"},
 			FirstReminderBeforeReport: firstReminderBefore,
 			LastReminderBeforeReport:  lastReminderBefore,

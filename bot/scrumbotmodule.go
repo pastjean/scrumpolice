@@ -21,6 +21,7 @@ func (b *Bot) HandleScrumMessage(event *slack.MessageEvent) bool {
 	// starting scrum for team [team] date [date]. if you want to abort say stop scrum
 
 	// this module only takes case in private messages
+	// D stands for direct message
 	if event.Channel[0] != 'D' {
 		return true
 	}
