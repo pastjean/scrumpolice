@@ -1,9 +1,9 @@
 package scrum
 
 import (
+	"github.com/robfig/cron"
 	"log"
 	"time"
-	"github.com/robfig/cron"
 )
 
 // {

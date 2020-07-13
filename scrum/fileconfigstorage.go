@@ -25,7 +25,7 @@ func (configStorage *FileConfigurationStorage) Load() *Config {
 		log.Println("Cannot parse configuration file ('", *configStorage.fileName, "') content:", err)
 	}
 	return &config
-	}
+}
 
 func (configStorage *FileConfigurationStorage) Save(config *Config) {
 	buffer, err := json.MarshalIndent(config, "", "    ")

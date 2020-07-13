@@ -4,7 +4,6 @@ import (
 	"testing"
 )
 
-
 func TestGetChannelFromMessage(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -17,7 +16,7 @@ func TestGetChannelFromMessage(t *testing.T) {
 		{"With accent", "<#C1234567|café>", "café", false},
 		{"Japanese", "<#C1234567|員>", "員", false},
 		{"User id", "<@U1234567>", "U1234567", false},
-		{"Private","#private_channel_name", "private_channel_name", false},
+		{"Private", "#private_channel_name", "private_channel_name", false},
 		{"Private with spaces", "#private_channel_name with garbage", "private_channel_name", false},
 		{"Fail no pound", "something_with_no_pound_or_at", "", true},
 		{"Fail brackets no name", "<C1234567>", "", true},

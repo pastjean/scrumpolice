@@ -1,8 +1,8 @@
 package scrum
 
 import (
-	"time"
 	"github.com/robfig/cron"
+	"time"
 )
 
 type (
