@@ -9,61 +9,61 @@ func TestHandleMessageIgnoreBotMessages(t *testing.T) {
 	bot.handleMessage(&slack.MessageEvent{Msg: slack.Msg{BotID: "test"}})
 }
 
-func TestCanTellIfMessageAdressedToBotByIdWithCorrectSyntax(t *testing.T) {
+func TestCanTellIfMessageAddressedToBotByIdWithCorrectSyntax(t *testing.T) {
 	bot := Bot{id: "scrumpolice",
 		name: "Sylvain"}
 
-	result := bot.adressedToMe("<@scrumpolice> hello")
+	result := bot.addressedToMe("<@scrumpolice> hello")
 	if !result {
 		t.Fail()
 	}
 }
 
-func TestCanTellIfMessageAdressedToBotByIdWithCorrectSyntaxButNotPrefixing(t *testing.T) {
+func TestCanTellIfMessageAddressedToBotByIdWithCorrectSyntaxButNotPrefixing(t *testing.T) {
 	bot := Bot{id: "scrumpolice",
 		name: "Sylvain"}
 
-	result := bot.adressedToMe("oh, it's you <@scrumpolice> hello")
+	result := bot.addressedToMe("oh, it's you <@scrumpolice> hello")
 	if result {
 		t.Fail()
 	}
 }
 
-func TestCanTellIfMessageAdressedToBotByIdWithWrongPrefix(t *testing.T) {
+func TestCanTellIfMessageAddressedToBotByIdWithWrongPrefix(t *testing.T) {
 	bot := Bot{id: "scrumpolice",
 		name: "Sylvain"}
 
-	result := bot.adressedToMe("@scrumpolice hello")
+	result := bot.addressedToMe("@scrumpolice hello")
 	if result {
 		t.Fail()
 	}
 }
 
-func TestCanTellIfMessageAdressedToBotByNameWithCorrectSyntax(t *testing.T) {
+func TestCanTellIfMessageAddressedToBotByNameWithCorrectSyntax(t *testing.T) {
 	bot := Bot{id: "scrumpolice",
 		name: "Sylvain"}
 
-	result := bot.adressedToMe("sylvain hello")
+	result := bot.addressedToMe("sylvain hello")
 	if !result {
 		t.Fail()
 	}
 }
 
-func TestCanTellIfMessageAdressedToBotByNameWithWrongName(t *testing.T) {
+func TestCanTellIfMessageAddressedToBotByNameWithWrongName(t *testing.T) {
 	bot := Bot{id: "scrumpolice",
 		name: "Sylvain"}
 
-	result := bot.adressedToMe("Rod Stewart hello")
+	result := bot.addressedToMe("Rod Stewart hello")
 	if result {
 		t.Fail()
 	}
 }
 
-func TestCanTellIfMessageAdressedToBotByNameWithCorrectSyntaxButNotPrefixing(t *testing.T) {
+func TestCanTellIfMessageAddressedToBotByNameWithCorrectSyntaxButNotPrefixing(t *testing.T) {
 	bot := Bot{id: "scrumpolice",
 		name: "Sylvain"}
 
-	result := bot.adressedToMe("oh, it's you sylvain hello")
+	result := bot.addressedToMe("oh, it's you sylvain hello")
 	if result {
 		t.Fail()
 	}

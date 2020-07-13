@@ -160,7 +160,7 @@ func (b *Bot) chooseTeamName(event *slack.MessageEvent) bool {
 			QuestionsSets: questions,
 		})
 
-		return b.choosenTeamToEdit(event, newTeamName)
+		return b.chosenTeamToEdit(event, newTeamName)
 	}))
 	return false
 }
@@ -174,7 +174,7 @@ func (b *Bot) startTeamEdition(event *slack.MessageEvent) bool {
 	}
 
 	return b.chooseTeamToEdit(event, func(event *slack.MessageEvent, team string) bool {
-		return b.choosenTeamToEdit(event, team)
+		return b.chosenTeamToEdit(event, team)
 	})
 }
 
@@ -222,7 +222,7 @@ func (b *Bot) chooseTeamToEdit(event *slack.MessageEvent, cb ChosenTeamFunc) boo
 	return false
 }
 
-func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
+func (b *Bot) chosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 	message := slack.Attachment{
 		MarkdownIn: []string{"text"},
 		Text: "" +
@@ -230,8 +230,8 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 			"- `remove @name`: Remove *@name* from team\n" +
 			"- `edit channel`: Edit the channel in which the scrum is posted\n" +
 			"- `edit schedule`: Edit the schedule of the scrum\n" +
-			"- `edit first reminder`: Edit the length of time before scrum to at which the users should be warned the first time\n" +
-			"- `edit last reminder`: Edit the length of time before scrum to at which the users should be warned the second time\n" +
+			"- `edit first reminder`: Edit the length of time before scrum at which the users should be warned the first time\n" +
+			"- `edit last reminder`: Edit the length of time before scrum at which the users should be warned the second time\n" +
 			"- `edit questions`: Edit the questions asked during scrum\n" +
 			"- `quit`: Stop editing and go back to your normal life",
 	}
@@ -248,7 +248,7 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 
 		if len(params) == 0 || params["action"] == "" || params["entity"] == "" {
 			_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, please try again or type `quit`", false), AsUser)
-			b.choosenTeamToEdit(event, team)
+			b.chosenTeamToEdit(event, team)
 			return false
 		}
 		action := params["action"]
@@ -263,7 +263,7 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 			if err != nil && action == "add" {
 				b.logSlackRelatedError(event, err, "Fail to get user information.")
 				_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Hmm... I couldn't find the user. Try again!", false), AsUser)
-				b.choosenTeamToEdit(event, team)
+				b.chosenTeamToEdit(event, team)
 				return false
 			}
 			username := rawUserName
@@ -287,7 +287,7 @@ func (b *Bot) choosenTeamToEdit(event *slack.MessageEvent, team string) bool {
 		}
 
 		_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Wrong choice, please try again or type `quit`", false), AsUser)
-		b.choosenTeamToEdit(event, team)
+		b.chosenTeamToEdit(event, team)
 		return false
 	}))
 
@@ -323,7 +323,7 @@ func (b *Bot) changeTeamChannel(event *slack.MessageEvent, team string) bool {
 		}).Info("Changed team channel.")
 
 		b.unsetUserContext(event.User)
-		b.choosenTeamToEdit(event, team)
+		b.chosenTeamToEdit(event, team)
 
 		return false
 	}))
@@ -389,7 +389,7 @@ func (b *Bot) changeScrumQuestion(event *slack.MessageEvent, team string, questi
 			b.printTeamQuestions(event, team, fmt.Sprintf("All right.  Here's the new set of questions for team %s", team))
 
 			b.unsetUserContext(event.User)
-			b.choosenTeamToEdit(event, team)
+			b.chosenTeamToEdit(event, team)
 
 			return false
 		}
@@ -407,7 +407,7 @@ func (b *Bot) ChangeUserAction(event *slack.MessageEvent, team string, action st
 		for _, user := range users {
 			if user == username {
 				_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("@"+username+" is already in the team "+team+". Do you need :eyeglasses:?", false), AsUser)
-				b.choosenTeamToEdit(event, team)
+				b.chosenTeamToEdit(event, team)
 
 				return false
 			}
@@ -439,7 +439,7 @@ func (b *Bot) ChangeUserAction(event *slack.MessageEvent, team string, action st
 
 		if !isInTeam {
 			_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("@"+username+" is not in team "+team+". I'm no magician!", false), AsUser)
-			b.choosenTeamToEdit(event, team)
+			b.chosenTeamToEdit(event, team)
 
 			return false
 		}
@@ -463,7 +463,7 @@ func (b *Bot) ChangeUserAction(event *slack.MessageEvent, team string, action st
 	}
 
 	b.unsetUserContext(event.User)
-	b.choosenTeamToEdit(event, team)
+	b.chosenTeamToEdit(event, team)
 
 	return false
 }
@@ -510,7 +510,7 @@ func (b *Bot) changeScrumSchedule(event *slack.MessageEvent, team string) bool {
 		_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(msg, false), AsUser)
 		b.unsetUserContext(event.User)
 
-		b.choosenTeamToEdit(event, team)
+		b.chosenTeamToEdit(event, team)
 
 		return false
 	}))
@@ -547,7 +547,7 @@ func (b *Bot) changeFirstReminder(event *slack.MessageEvent, team string) bool {
 		msg = "First reminder duration successfully changed! The users will be warned " + strings.Replace(duration.String(), "-", "", -1) + " before the scrum."
 		_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(msg, false), AsUser)
 		b.unsetUserContext(event.User)
-		b.choosenTeamToEdit(event, team)
+		b.chosenTeamToEdit(event, team)
 
 		return false
 	}))
@@ -584,7 +584,7 @@ func (b *Bot) changeSecondReminder(event *slack.MessageEvent, team string) bool 
 		msg = "Last reminder duration successfully changed! The users will be warned " + strings.Replace(duration.String(), "-", "", -1) + " before the scrum."
 		_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(msg, false), AsUser)
 		b.unsetUserContext(event.User)
-		b.choosenTeamToEdit(event, team)
+		b.chosenTeamToEdit(event, team)
 
 		return false
 	}))

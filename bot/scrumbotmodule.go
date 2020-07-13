@@ -78,7 +78,7 @@ func (b *Bot) startScrum(event *slack.MessageEvent, isSkipped bool) bool {
 	}
 
 	if len(teams) == 1 {
-		return b.choosenTeam(event, username, teams[0], isSkipped)
+		return b.chosenTeam(event, username, teams[0], isSkipped)
 	}
 
 	return b.chooseTeam(event, username, teams, isSkipped)
@@ -104,13 +104,13 @@ func (b *Bot) chooseTeam(event *slack.MessageEvent, username string, teams []str
 			return false
 		}
 		// i-1 is related to above comments
-		return b.choosenTeam(event, username, teams[i-1], isSkipped)
+		return b.chosenTeam(event, username, teams[i-1], isSkipped)
 	}))
 
 	return false
 }
 
-func (b *Bot) choosenTeam(event *slack.MessageEvent, username string, team string, isSkipped bool) bool {
+func (b *Bot) chosenTeam(event *slack.MessageEvent, username string, team string, isSkipped bool) bool {
 	qs := b.scrum.GetQuestionSetsForTeam(team)
 
 	if len(qs) == 0 {
@@ -119,11 +119,11 @@ func (b *Bot) choosenTeam(event *slack.MessageEvent, username string, team strin
 	}
 
 	if len(qs) == 1 {
-		return b.choosenTeamAndContext(event, username, team, qs[0], isSkipped)
+		return b.chosenTeamAndContext(event, username, team, qs[0], isSkipped)
 	}
 
+	// get the question set (if more than one)
 	return b.chooseContext(event, username, team, qs, isSkipped)
-	// get the questionset (if more than one)
 }
 
 func (b *Bot) chooseContext(event *slack.MessageEvent, username string, team string, questionSets []*scrum.QuestionSet, isSkipped bool) bool {
@@ -144,13 +144,13 @@ func (b *Bot) chooseContext(event *slack.MessageEvent, username string, team str
 			return false
 		}
 
-		return b.choosenTeamAndContext(event, username, team, questionSets[i], isSkipped)
+		return b.chosenTeamAndContext(event, username, team, questionSets[i], isSkipped)
 	}))
 
 	return false
 }
 
-func (b *Bot) choosenTeamAndContext(event *slack.MessageEvent, username string, team string, questionSet *scrum.QuestionSet, isSkipped bool) bool {
+func (b *Bot) chosenTeamAndContext(event *slack.MessageEvent, username string, team string, questionSet *scrum.QuestionSet, isSkipped bool) bool {
 	if isSkipped {
 		msg := fmt.Sprintf("Scrum report skipped for %s in team %s, type `restart scrum` if it should not be skipped.", username, team)
 		_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(msg, false), AsUser)
@@ -185,7 +185,7 @@ func (b *Bot) answerQuestions(event *slack.MessageEvent, questionSet *scrum.Ques
 		b.logger.WithFields(log.Fields{
 			"user": report.User,
 			"team": report.Team,
-		}).Info("All questions anwsered, entry saved.")
+		}).Info("All questions answered, entry saved.")
 		return false
 	}
 

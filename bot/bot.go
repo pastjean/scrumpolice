@@ -68,7 +68,7 @@ func (b *Bot) Run() {
 
 func (b *Bot) handleMessage(event *slack.MessageEvent) {
 	if event.BotID != "" {
-		// Ignore the messages commong from other bots
+		// Ignore the messages common from other bots
 		return
 	}
 
@@ -99,22 +99,22 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		return
 	}
 
-	if !isIM && !b.adressedToMe(eventText) {
+	if !isIM && !b.addressedToMe(eventText) {
 		return
 	}
 
-	// FROM HERE All Commands need to be adressed to me or handled in private conversations
-	adressedToMe := b.adressedToMe(eventText)
-	if !isIM && adressedToMe {
+	// FROM HERE All Commands need to be addressed to me or handled in private conversations
+	addressedToMe := b.addressedToMe(eventText)
+	if !isIM && addressedToMe {
 		eventText = b.trimBotNameInMessage(eventText)
 	}
 
-	// From here on i only care of messages that were clearly adressed to me so i'll just get out
-	if !adressedToMe && !isIM {
+	// From here on i only care of messages that were clearly addressed to me so i'll just get out
+	if !addressedToMe && !isIM {
 		return
 	}
 
-	// Handle commands adressed to me (can be public or private)
+	// Handle commands addressed to me (can be public or private)
 	if eventText == "source code" {
 		b.sourceCode(event)
 		return
@@ -145,12 +145,12 @@ func (b *Bot) handleMessage(event *slack.MessageEvent) {
 		return
 	}
 
-	// Unrecogned message so let's help the user
+	// Unrecognized message so let's help the user
 	b.unrecognizedMessage(event)
 	return
 }
 
-func (b *Bot) adressedToMe(msg string) bool {
+func (b *Bot) addressedToMe(msg string) bool {
 	return strings.HasPrefix(msg, strings.ToLower("<@"+b.id+">")) ||
 		strings.HasPrefix(msg, strings.ToLower(b.name))
 }
@@ -224,7 +224,7 @@ func (b *Bot) tutorial(event *slack.MessageEvent) {
 	time.Sleep(3500 * time.Millisecond)
 	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("When you want to start a scrum, just direct message me `start scrum`. If you have more than one team, I'll ask you which one you want to use.", false), AsUser)
 	time.Sleep(6500 * time.Millisecond)
-	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I'll ask you questions from your team, one by one. Once you've anwsered all my questions, you're done! :white_check_mark:", false), AsUser)
+	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I'll ask you questions from your team, one by one. Once you've answered all my questions, you're done! :white_check_mark:", false), AsUser)
 	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(":male-police-officer: I take care of the rest! :female-police-officer:", false), AsUser)
 	time.Sleep(4500 * time.Millisecond)
 	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("When it's time :clock10:, I'll post my report in your team's channel :raised_hands:\n", false), AsUser)
