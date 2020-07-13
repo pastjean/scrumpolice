@@ -14,6 +14,8 @@ import (
 	"github.com/slack-go/slack"
 )
 
+var defaultQuestions = []string{"What did you do yesterday?", "What will you do today?", "Are you being blocked by someone for a review? who? why?"}
+
 // HandleMessage handle a received message for team and returns if the bot shall continue to process the message or stop
 // continue = true
 // stop = false
@@ -142,7 +144,7 @@ func (b *Bot) chooseTeamName(event *slack.MessageEvent) bool {
 		schedule, _ := cron.Parse(defaultCron)
 
 		questions := []*scrum.QuestionSet{{
-			Questions:                 []string{"What did you do yesterday?", "What will you do today?", "Are you being blocked by someone for a review? who? why?"},
+			Questions:                 defaultQuestions,
 			FirstReminderBeforeReport: firstReminderBefore,
 			LastReminderBeforeReport:  lastReminderBefore,
 			ReportScheduleCron:        defaultCron,
@@ -343,21 +345,33 @@ func (b *Bot) changeScrumQuestions(event *slack.MessageEvent, team string) bool 
 		return false
 	}
 
-	b.printTeamQuestions(event, team)
+	numberOfQuestions := b.printTeamQuestions(event, team, "Previous questions")
+
+	if numberOfQuestions > 0 {
+		msg := "I have deleted these questions.  Please enter new questions. If you type `done` without entering questions I'll use the default ones."
+		_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(msg, false), AsUser)
+	}
 
 	return b.changeScrumQuestion(event, team, []string{})
 }
 
-func (b *Bot) printTeamQuestions(event *slack.MessageEvent, team string) {
+func (b *Bot) printTeamQuestions(event *slack.MessageEvent, team, headline string) int {
 	qs := b.scrum.GetQuestionSetsForTeam(team)[0]
-	questions := make([]string, len(qs.Questions))
-	for i, question := range qs.Questions {
-		// Included i+1 here to make things consistent for users
-		questions[i] = fmt.Sprintf("%d - %s", i+1, question)
+	questions := make([]string, len(qs.Questions)+1)
+	numberOfQuestions := len(qs.Questions)
+
+	if len(qs.Questions) == 0 {
+		questions[0] = "<none>"
+	} else {
+		for i, question := range qs.Questions {
+			// Included i+1 here to make things consistent for users
+			questions[i] = fmt.Sprintf("%d - %s", i+1, question)
+		}
 	}
 
-	msg := fmt.Sprintf("Current questions:\n%s", strings.Join(questions, "\n"))
+	msg := fmt.Sprintf("%s:\n%s", headline, strings.Join(questions, "\n"))
 	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(msg, false), AsUser)
+	return numberOfQuestions
 }
 
 func (b *Bot) changeScrumQuestion(event *slack.MessageEvent, team string, questions []string) bool {
@@ -366,9 +380,13 @@ func (b *Bot) changeScrumQuestion(event *slack.MessageEvent, team string, questi
 
 	b.setUserContext(event.User, b.canQuitBotContextHandlerFunc(func(event *slack.MessageEvent) bool {
 		if strings.ToLower(event.Text) == "done" {
+			if len(questions) == 0 {
+				_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("You haven't entered any questions.  I'll use the default ones.", false), AsUser)
+				questions = defaultQuestions
+			}
 			b.scrum.ReplaceScrumQuestionsInTeam(team, questions)
 
-			b.printTeamQuestions(event, team)
+			b.printTeamQuestions(event, team, fmt.Sprintf("All right.  Here's the new set of questions for team %s", team))
 
 			b.unsetUserContext(event.User)
 			b.choosenTeamToEdit(event, team)
