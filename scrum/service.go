@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	colorful "github.com/lucasb-eyer/go-colorful"
+	"github.com/lucasb-eyer/go-colorful"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	"github.com/slack-go/slack"
@@ -101,8 +101,8 @@ func (teamState *TeamState) sendReportForTeam(qs *QuestionSet) {
 		return
 	}
 
-	attachments := []slack.Attachment{}
-	didNotDoReport := []string{}
+	var attachments []slack.Attachment
+	var didNotDoReport []string
 	for _, member := range teamState.Members {
 		report, ok := qsstate.enteredReports[member]
 		if !ok {
@@ -195,7 +195,7 @@ func (teamState *TeamState) sendFirstReminder(qs *QuestionSet) {
 
 func (teamState *TeamState) sendLastReminder(qs *QuestionSet) {
 	questionSetState := teamState.questionSetStates[qs]
-	didNotDoReport := []string{}
+	var didNotDoReport []string
 
 	log.WithFields(log.Fields{
 		"team":    teamState.Team.Name,
@@ -219,12 +219,12 @@ func (teamState *TeamState) sendLastReminder(qs *QuestionSet) {
 	teamState.postMessageToSlack(teamState.Channel, slack.MsgOptionText(fmt.Sprintf("Last chance to fill report! :shame: to: %s", memberThatDidNotDoReport), false))
 }
 
-type ScrumReportJob struct {
+type ReportJob struct {
 	*TeamState
 	*QuestionSet
 }
 
-func (job *ScrumReportJob) Run() {
+func (job *ReportJob) Run() {
 	job.TeamState.sendReportForTeam(job.QuestionSet)
 	// Reset the questionSetState
 	job.TeamState.questionSetStates[job.QuestionSet] = emptyQuestionSetState(job.QuestionSet)
@@ -237,13 +237,13 @@ const (
 	Last
 )
 
-type ScrumReminderJob struct {
+type ReminderJob struct {
 	iteration iteration
 	*TeamState
 	*QuestionSet
 }
 
-func (job *ScrumReminderJob) Run() {
+func (job *ReminderJob) Run() {
 	// Post to slack things
 	if job.iteration == First {
 		job.TeamState.sendFirstReminder(job.QuestionSet)
@@ -300,7 +300,7 @@ func (mod *service) refresh(config *Config) {
 			}).Info("Refreshing team.")
 			state.Cron.Stop()
 		}
-		state = initTeamStateWithLocation(team, globalLocation, mod)
+		state = initTeamStateWithLocation(team, mod)
 		mod.teamStates[team.Name] = state
 	}
 }
@@ -322,7 +322,7 @@ func (mod *service) getCurrentConfig() *Config {
 	}
 }
 
-func initTeamStateWithLocation(team *Team, globalLocation *time.Location, mod *service) *TeamState {
+func initTeamStateWithLocation(team *Team, mod *service) *TeamState {
 	state := &TeamState{
 		Team:              team,
 		service:           mod,
@@ -339,9 +339,9 @@ func initTeamStateWithLocation(team *Team, globalLocation *time.Location, mod *s
 func initTeamState(team *Team, state *TeamState) {
 	for _, qs := range team.QuestionsSets {
 		state.questionSetStates[qs] = emptyQuestionSetState(qs)
-		state.Cron.Schedule(qs.ReportSchedule, &ScrumReportJob{state, qs})
-		state.Cron.Schedule(newScheduleDependentSchedule(qs.ReportSchedule, qs.FirstReminderBeforeReport), &ScrumReminderJob{First, state, qs})
-		state.Cron.Schedule(newScheduleDependentSchedule(qs.ReportSchedule, qs.LastReminderBeforeReport), &ScrumReminderJob{Last, state, qs})
+		state.Cron.Schedule(qs.ReportSchedule, &ReportJob{state, qs})
+		state.Cron.Schedule(newScheduleDependentSchedule(qs.ReportSchedule, qs.FirstReminderBeforeReport), &ReminderJob{First, state, qs})
+		state.Cron.Schedule(newScheduleDependentSchedule(qs.ReportSchedule, qs.LastReminderBeforeReport), &ReminderJob{Last, state, qs})
 	}
 	state.Cron.Start()
 }
@@ -371,18 +371,18 @@ func (s *scheduleDependentSchedule) Next(t time.Time) time.Time {
 	return s.depNext.Add(s.Duration)
 }
 
-func (m *service) GetTeams() []string {
-	teams := []string{}
-	for _, ts := range m.teamStates {
+func (mod *service) GetTeams() []string {
+	var teams []string
+	for _, ts := range mod.teamStates {
 		teams = append(teams, ts.Name)
 	}
 
 	return teams
 }
 
-func (m *service) GetTeamsForUser(username string) []string {
-	teams := []string{}
-	for _, ts := range m.teamStates {
+func (mod *service) GetTeamsForUser(username string) []string {
+	var teams []string
+	for _, ts := range mod.teamStates {
 		for _, member := range ts.Members {
 			if username == member {
 				teams = append(teams, ts.Name)
@@ -393,8 +393,8 @@ func (m *service) GetTeamsForUser(username string) []string {
 	return teams
 }
 
-func (m *service) GetTeamByName(teamName string) (*TeamState, error) {
-	for _, ts := range m.teamStates {
+func (mod *service) GetTeamByName(teamName string) (*TeamState, error) {
+	for _, ts := range mod.teamStates {
 		if teamName == ts.Team.Name {
 			return ts, nil
 		}
@@ -402,33 +402,33 @@ func (m *service) GetTeamByName(teamName string) (*TeamState, error) {
 	return nil, errors.New("Team " + teamName + " does not exist")
 }
 
-func (m *service) GetQuestionSetsForTeam(team string) []*QuestionSet {
-	return m.teamStates[team].QuestionsSets
+func (mod *service) GetQuestionSetsForTeam(team string) []*QuestionSet {
+	return mod.teamStates[team].QuestionsSets
 }
 
-func (m *service) GetUsersForTeam(team string) []string {
-	return m.teamStates[team].Members
+func (mod *service) GetUsersForTeam(team string) []string {
+	return mod.teamStates[team].Members
 }
 
-func (m *service) SaveReport(report *Report, qs *QuestionSet) {
-	m.lastEnteredReport[report.User] = report
-	m.teamStates[report.Team].questionSetStates[qs].enteredReports[report.User] = report
+func (mod *service) SaveReport(report *Report, qs *QuestionSet) {
+	mod.lastEnteredReport[report.User] = report
+	mod.teamStates[report.Team].questionSetStates[qs].enteredReports[report.User] = report
 
 	// if done launch report answers
-	if len(m.teamStates[report.Team].Members) == len(m.teamStates[report.Team].questionSetStates[qs].enteredReports) {
-		m.teamStates[report.Team].sendReportForTeam(qs)
+	if len(mod.teamStates[report.Team].Members) == len(mod.teamStates[report.Team].questionSetStates[qs].enteredReports) {
+		mod.teamStates[report.Team].sendReportForTeam(qs)
 	}
 }
 
-func (m *service) DeleteLastReport(user string) bool {
+func (mod *service) DeleteLastReport(user string) bool {
 
-	r, ok := m.lastEnteredReport[user]
+	r, ok := mod.lastEnteredReport[user]
 	if !ok {
 		return false
 	}
-	delete(m.lastEnteredReport, user)
+	delete(mod.lastEnteredReport, user)
 
-	ts, ok := m.teamStates[r.Team]
+	ts, ok := mod.teamStates[r.Team]
 	if !ok {
 		return false
 	}
@@ -444,101 +444,101 @@ func (m *service) DeleteLastReport(user string) bool {
 	return false
 }
 
-func (m *service) AddToOutOfOffice(team string, username string) {
-	m.teamStates[team].OutOfOffice = append(m.teamStates[team].OutOfOffice, username)
+func (mod *service) AddToOutOfOffice(team string, username string) {
+	mod.teamStates[team].OutOfOffice = append(mod.teamStates[team].OutOfOffice, username)
 
-	m.saveConfig()
+	mod.saveConfig()
 }
 
-func (m *service) RemoveFromOutOfOffice(team string, username string) {
+func (mod *service) RemoveFromOutOfOffice(team string, username string) {
 	var ooof []string
-	for _, outOfOfficeMember := range m.teamStates[team].OutOfOffice {
+	for _, outOfOfficeMember := range mod.teamStates[team].OutOfOffice {
 		if outOfOfficeMember != username {
 			ooof = append(ooof, outOfOfficeMember)
 		}
 	}
-	m.teamStates[team].OutOfOffice = ooof
+	mod.teamStates[team].OutOfOffice = ooof
 
-	m.saveConfig()
+	mod.saveConfig()
 }
 
-func (m *service) AddToTeam(team string, username string) {
-	m.teamStates[team].Members = append(m.teamStates[team].Members, username)
+func (mod *service) AddToTeam(team string, username string) {
+	mod.teamStates[team].Members = append(mod.teamStates[team].Members, username)
 
-	m.saveConfig()
+	mod.saveConfig()
 }
 
-func (m *service) RemoveFromTeam(team string, username string) {
+func (mod *service) RemoveFromTeam(team string, username string) {
 	var members []string
-	for _, member := range m.teamStates[team].Members {
+	for _, member := range mod.teamStates[team].Members {
 		if member != username {
 			members = append(members, member)
 		}
 	}
-	m.teamStates[team].Members = members
+	mod.teamStates[team].Members = members
 
-	m.saveConfig()
+	mod.saveConfig()
 }
 
-func (m *service) AddTeam(team *Team) {
-	location, _ := time.LoadLocation(m.getCurrentConfig().Timezone)
+func (mod *service) AddTeam(team *Team) {
+	location, _ := time.LoadLocation(mod.getCurrentConfig().Timezone)
 	team.Timezone = location
-	state := initTeamStateWithLocation(team, location, m)
-	m.teamStates[team.Name] = state
+	state := initTeamStateWithLocation(team, mod)
+	mod.teamStates[team.Name] = state
 
-	m.saveConfig()
+	mod.saveConfig()
 }
 
-func (m *service) DeleteTeam(team string) {
-	m.teamStates[team].Cron.Stop()
-	delete(m.teamStates, team)
+func (mod *service) DeleteTeam(team string) {
+	mod.teamStates[team].Cron.Stop()
+	delete(mod.teamStates, team)
 
-	m.saveConfig()
+	mod.saveConfig()
 }
 
-func (m *service) ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule, scheduleAsString string) {
-	m.teamStates[team].Team.QuestionsSets[0].ReportSchedule = schedule
-	m.teamStates[team].Team.QuestionsSets[0].ReportScheduleCron = scheduleAsString
+func (mod *service) ReplaceScrumScheduleInTeam(team string, schedule cron.Schedule, scheduleAsString string) {
+	mod.teamStates[team].Team.QuestionsSets[0].ReportSchedule = schedule
+	mod.teamStates[team].Team.QuestionsSets[0].ReportScheduleCron = scheduleAsString
 
-	m.teamStates[team].Cron.Stop()
-	m.teamStates[team].Cron = cron.NewWithLocation(m.teamStates[team].Team.Timezone)
-	initTeamState(m.teamStates[team].Team, m.teamStates[team])
+	mod.teamStates[team].Cron.Stop()
+	mod.teamStates[team].Cron = cron.NewWithLocation(mod.teamStates[team].Team.Timezone)
+	initTeamState(mod.teamStates[team].Team, mod.teamStates[team])
 
-	m.saveConfig()
+	mod.saveConfig()
 }
 
-func (m *service) ReplaceFirstReminderInTeam(team string, duration time.Duration) {
-	m.teamStates[team].Team.QuestionsSets[0].FirstReminderBeforeReport = duration
+func (mod *service) ReplaceFirstReminderInTeam(team string, duration time.Duration) {
+	mod.teamStates[team].Team.QuestionsSets[0].FirstReminderBeforeReport = duration
 
-	m.teamStates[team].Cron.Stop()
-	m.teamStates[team].Cron = cron.NewWithLocation(m.teamStates[team].Team.Timezone)
-	initTeamState(m.teamStates[team].Team, m.teamStates[team])
+	mod.teamStates[team].Cron.Stop()
+	mod.teamStates[team].Cron = cron.NewWithLocation(mod.teamStates[team].Team.Timezone)
+	initTeamState(mod.teamStates[team].Team, mod.teamStates[team])
 
-	m.saveConfig()
+	mod.saveConfig()
 }
 
-func (m *service) ReplaceLastReminderInTeam(team string, duration time.Duration) {
-	m.teamStates[team].Team.QuestionsSets[0].LastReminderBeforeReport = duration
+func (mod *service) ReplaceLastReminderInTeam(team string, duration time.Duration) {
+	mod.teamStates[team].Team.QuestionsSets[0].LastReminderBeforeReport = duration
 
-	m.teamStates[team].Cron.Stop()
-	m.teamStates[team].Cron = cron.NewWithLocation(m.teamStates[team].Team.Timezone)
-	initTeamState(m.teamStates[team].Team, m.teamStates[team])
+	mod.teamStates[team].Cron.Stop()
+	mod.teamStates[team].Cron = cron.NewWithLocation(mod.teamStates[team].Team.Timezone)
+	initTeamState(mod.teamStates[team].Team, mod.teamStates[team])
 
-	m.saveConfig()
+	mod.saveConfig()
 }
 
-func (m *service) ReplaceScrumQuestionsInTeam(team string, questions []string) {
-	m.teamStates[team].Cron.Stop()
-	m.teamStates[team].Cron = cron.NewWithLocation(m.teamStates[team].Team.Timezone)
+func (mod *service) ReplaceScrumQuestionsInTeam(team string, questions []string) {
+	mod.teamStates[team].Cron.Stop()
+	mod.teamStates[team].Cron = cron.NewWithLocation(mod.teamStates[team].Team.Timezone)
 
-	m.teamStates[team].Team.QuestionsSets[0].Questions = questions
-	initTeamState(m.teamStates[team].Team, m.teamStates[team])
+	mod.teamStates[team].Team.QuestionsSets[0].Questions = questions
+	initTeamState(mod.teamStates[team].Team, mod.teamStates[team])
 
-	m.saveConfig()
+	mod.saveConfig()
 }
 
-func (m *service) ChangeTeamChannel(team string, channel string) {
-	m.teamStates[team].Channel = channel
+func (mod *service) ChangeTeamChannel(team string, channel string) {
+	mod.teamStates[team].Channel = channel
 
-	m.saveConfig()
+	mod.saveConfig()
 }

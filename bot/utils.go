@@ -30,7 +30,7 @@ func getChannelFromMessage(receivedMessage string) (newChannel string, err error
 	fmt.Println(params)
 
 	if len(params) == 0 || (params["user_channel"] == "" && params["public_channel"] == "" && params["private_channel"] == "") {
-		err = errors.New("Cannot find channel name")
+		err = errors.New("cannot find channel name")
 		return
 	}
 

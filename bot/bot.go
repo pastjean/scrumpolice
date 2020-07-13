@@ -23,7 +23,7 @@ type (
 		slackBotAPI *slack.Client
 
 		userContextsMutex sync.Mutex
-		userContexts      map[string]BotContextHandler
+		userContexts      map[string]ContextHandler
 
 		scrum scrum.Service
 
@@ -43,7 +43,7 @@ func New(slackApiClient *slack.Client, logger *log.Logger, scrum scrum.Service) 
 		slackBotAPI:  slackApiClient,
 		slackBotRTM:  slackBotRTM,
 		logger:       logger,
-		userContexts: map[string]BotContextHandler{},
+		userContexts: map[string]ContextHandler{},
 		iconURL:      "http://i.imgur.com/dzZvzXm.jpg",
 		scrum:        scrum,
 	}
@@ -220,18 +220,18 @@ func (b *Bot) help(event *slack.MessageEvent) {
 // This method sleeps to give a better feeling to the user. It should be use in a sub-routine.
 func (b *Bot) tutorial(event *slack.MessageEvent) {
 
-	b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("*Hi there* :wave:", false), AsUser)
+	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("*Hi there* :wave:", false), AsUser)
 	time.Sleep(3500 * time.Millisecond)
-	b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("When you want to start a scrum, just direct message me `start scrum`. If you have more than one team, I'll ask you which one you want to use.", false), AsUser)
+	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("When you want to start a scrum, just direct message me `start scrum`. If you have more than one team, I'll ask you which one you want to use.", false), AsUser)
 	time.Sleep(6500 * time.Millisecond)
-	b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I'll ask you questions from your team, one by one. Once you've anwsered all my questions, you're done! :white_check_mark:", false), AsUser)
-	b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(":male-police-officer: I take care of the rest! :female-police-officer:", false), AsUser)
+	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I'll ask you questions from your team, one by one. Once you've anwsered all my questions, you're done! :white_check_mark:", false), AsUser)
+	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText(":male-police-officer: I take care of the rest! :female-police-officer:", false), AsUser)
 	time.Sleep(4500 * time.Millisecond)
-	b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("When it's time :clock10:, I'll post my report in your team's channel :raised_hands:\n", false), AsUser)
+	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("When it's time :clock10:, I'll post my report in your team's channel :raised_hands:\n", false), AsUser)
 	time.Sleep(4500 * time.Millisecond)
-	b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Then, all you have to do is read :eyess: the report.", false), AsUser)
+	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Then, all you have to do is read :eyess: the report.", false), AsUser)
 	time.Sleep(3000 * time.Millisecond)
-	b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("That's all, cheers! :tada:", false), AsUser)
+	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("That's all, cheers! :tada:", false), AsUser)
 }
 
 func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string, resolveUser bool) {
@@ -240,7 +240,7 @@ func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string, resolveUser 
 		user, err := b.slackBotAPI.GetUserInfo(userId)
 		if err != nil {
 			b.logSlackRelatedError(event, err, "Fail to get user information.")
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Hmm... I couldn't find you. Try again!", false), AsUser)
+			_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Hmm... I couldn't find you. Try again!", false), AsUser)
 			return
 		}
 		username = user.Name
@@ -252,20 +252,20 @@ func (b *Bot) outOfOffice(event *slack.MessageEvent, userId string, resolveUser 
 		b.scrum.AddToOutOfOffice(team, username)
 	}
 	if event.User == userId {
-		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I've marked you as out-of-office in all your teams.", false), AsUser)
+		_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I've marked you as out-of-office in all your teams.", false), AsUser)
 		log.WithFields(log.Fields{
 			"user":   username,
 			"doneBy": username,
 		}).Info("User was marked out of office.")
 	} else {
-		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I've marked @"+userId+" as out-of-office in all of their teams", false), AsUser)
+		_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I've marked @"+userId+" as out-of-office in all of their teams", false), AsUser)
 
 		user, err := b.slackBotAPI.GetUserInfo(event.User)
 		if err != nil {
 			b.logSlackRelatedError(event, err, "Fail to get user information.")
 			return
 		}
-		b.slackBotAPI.PostMessage("@"+userId, slack.MsgOptionText("You've been marked as out-of-office by @"+user.Name+".", false), AsUser)
+		_, _, _ = b.slackBotAPI.PostMessage("@"+userId, slack.MsgOptionText("You've been marked as out-of-office by @"+user.Name+".", false), AsUser)
 		log.WithFields(log.Fields{
 			"user":   userId,
 			"doneBy": user.Name,
@@ -277,7 +277,7 @@ func (b *Bot) backInOffice(event *slack.MessageEvent) {
 	user, err := b.slackBotAPI.GetUserInfo(event.User)
 	if err != nil {
 		b.logSlackRelatedError(event, err, "Fail to get user information.")
-		b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Hmm... I couldn't find you. Try again!", false), AsUser)
+		_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Hmm... I couldn't find you. Try again!", false), AsUser)
 		return
 	}
 	username := user.Name
@@ -287,7 +287,7 @@ func (b *Bot) backInOffice(event *slack.MessageEvent) {
 	for _, team := range teams {
 		b.scrum.RemoveFromOutOfOffice(team, username)
 	}
-	b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I've marked you as in-office in all your teams. Welcome back!", false), AsUser)
+	_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("I've marked you as in-office in all your teams. Welcome back!", false), AsUser)
 	log.WithFields(log.Fields{
 		"user": username,
 	}).Info("User was marked in office.")
@@ -306,14 +306,14 @@ func (b *Bot) unrecognizedMessage(event *slack.MessageEvent) {
 	}
 }
 
-func (b *Bot) canQuitBotContextHandlerFunc(handler func(event *slack.MessageEvent) bool) BotContextHandler {
-	return b.canQuitBotContext(BotContextHandlerFunc(handler))
+func (b *Bot) canQuitBotContextHandlerFunc(handler func(event *slack.MessageEvent) bool) ContextHandler {
+	return b.canQuitBotContext(ContextHandlerFunc(handler))
 }
 
-func (b *Bot) canQuitBotContext(handler BotContextHandler) BotContextHandler {
-	return BotContextHandlerFunc(func(event *slack.MessageEvent) bool {
+func (b *Bot) canQuitBotContext(handler ContextHandler) ContextHandler {
+	return ContextHandlerFunc(func(event *slack.MessageEvent) bool {
 		if event.Text == "quit" {
-			b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Alright! If you wanna do anything else, just :ping: me. `help` is always available! :wave:", false), AsUser)
+			_, _, _ = b.slackBotAPI.PostMessage(event.Channel, slack.MsgOptionText("Alright! If you wanna do anything else, just :ping: me. `help` is always available! :wave:", false), AsUser)
 			delete(b.userContexts, event.User)
 			return false
 		}
@@ -322,7 +322,7 @@ func (b *Bot) canQuitBotContext(handler BotContextHandler) BotContextHandler {
 	})
 }
 
-func (b *Bot) setUserContext(user string, context BotContextHandler) {
+func (b *Bot) setUserContext(user string, context ContextHandler) {
 	b.userContextsMutex.Lock()
 	b.userContexts[user] = context
 	b.userContextsMutex.Unlock()
