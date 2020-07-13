@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/coveord/scrumpolice/scrum"
-	"github.com/nlopes/slack"
 	log "github.com/sirupsen/logrus"
+	"github.com/slack-go/slack"
 )
 
 // HandleMessage handle a received message for scrums and returns if the bot shall continue to process the message or stop

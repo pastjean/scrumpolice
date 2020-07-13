@@ -8,8 +8,8 @@ import (
 
 	"github.com/coveord/scrumpolice/bot"
 	"github.com/coveord/scrumpolice/scrum"
-	"github.com/nlopes/slack"
 	"github.com/sirupsen/logrus"
+	"github.com/slack-go/slack"
 )
 
 const header = "                                           _ _\n" +

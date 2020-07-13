@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/coveord/scrumpolice/scrum"
-	"github.com/nlopes/slack"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
+	"github.com/slack-go/slack"
 )
 
 // HandleMessage handle a received message for team and returns if the bot shall continue to process the message or stop

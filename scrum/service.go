@@ -7,9 +7,9 @@ import (
 	"time"
 
 	colorful "github.com/lucasb-eyer/go-colorful"
-	"github.com/nlopes/slack"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
+	"github.com/slack-go/slack"
 )
 
 type Service interface {

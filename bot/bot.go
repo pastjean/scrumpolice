@@ -9,7 +9,7 @@ import (
 	"github.com/coveord/scrumpolice/scrum"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/nlopes/slack"
+	"github.com/slack-go/slack"
 )
 
 var (

@@ -1,6 +1,6 @@
 package bot
 
-import "github.com/nlopes/slack"
+import "github.com/slack-go/slack"
 
 type BotContextHandler interface {
 	HandleMessage(event *slack.MessageEvent) bool

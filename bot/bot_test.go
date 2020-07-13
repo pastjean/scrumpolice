@@ -1,7 +1,7 @@
 package bot
 
 import "testing"
-import "github.com/nlopes/slack"
+import "github.com/slack-go/slack"
 
 func TestHandleMessageIgnoreBotMessages(t *testing.T) {
 	bot := Bot{}
